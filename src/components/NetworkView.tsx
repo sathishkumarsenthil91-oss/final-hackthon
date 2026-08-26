@@ -105,12 +105,12 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
   // Convert current user profile into a NetworkUser representation to ensure NO duplicated data
   const currentUserNetworkProfile: NetworkUser = {
     id: 'current-user',
-    name: user.name || 'Arun Kumar',
-    headline: user.headline || `${user.targetRole || 'Full Stack Engineer'} • ${user.college || 'National Institute of Technology'} • ${user.degree || 'B.Tech CSE'}`,
-    avatarUrl: user.avatarUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDGU-N-ngl7c2um7vzffABH0XxFH-jqpmjpOuXTCvDD7QjAU-f58dUwxqjafLv6FORGA0ryz33uUryY1wCOpcYYBdf0Oi_S5am9sXDelD_NwP2x_KcZGhSdjgwc-bGOtqpGW0mVj-HsawSFUwuXnr5JSzsE656pj0KkZKo_lHPS_mfU_osnhDVAP5XI3fEQcJ1CXWKYJ-NkW5G90Z00OY30u9YF5wwxpvgrc6x488nUZSVXj16N-Rsd',
+    name: user.name || (user.email ? user.email.split('@')[0] : 'Student Developer'),
+    headline: user.headline || `${user.targetRole || 'Full Stack Engineer'} • ${user.college || 'University Institute of Technology'} • ${user.degree || 'B.Tech CSE'}`,
+    avatarUrl: user.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
     company: user.college || 'University',
     role: user.targetRole || 'Full Stack Developer',
-    location: user.location || 'San Francisco Bay Area',
+    location: user.location || 'San Francisco Bay Area / Remote',
     bio: user.bio || 'Passionate software engineer building resilient web and AI products.',
     followersCount: user.followersCount ?? 428,
     followingCount: user.followingCount ?? 184,
@@ -124,8 +124,8 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         title: 'Real-time Collaborative Whiteboard & Canvas',
         description: 'Ultra-low latency multiplayer canvas powered by WebSockets, React, and TypeScript with live cursor syncing.',
         tags: ['React', 'TypeScript', 'WebSockets', 'Canvas API'],
-        githubUrl: 'https://github.com/arunkumar-dev/collab-canvas',
-        demoUrl: 'https://canvas-demo.arunkumar.dev',
+        githubUrl: user.githubUrl || 'https://github.com',
+        demoUrl: user.portfolioUrl || 'https://portfolio.dev',
         date: '2025',
         stars: 340,
       },
@@ -134,7 +134,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
         title: 'AI Scam Guard & Career Verification Engine',
         description: 'Automated vulnerability scanner for career postings analyzing fraud signals with Gemini and heuristic security rules.',
         tags: ['Gemini AI', 'Express', 'TypeScript', 'Zod'],
-        githubUrl: 'https://github.com/arunkumar-dev/safety-guard',
+        githubUrl: user.githubUrl || 'https://github.com',
         date: '2026',
         stars: 180,
       },
@@ -298,7 +298,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     const newComment: NetworkComment = {
       id: `comm-${Date.now()}-${Math.random()}`,
       authorId: 'current-user',
-      authorName: user.name || 'Arun Kumar',
+      authorName: user.name || currentUserNetworkProfile.name,
       authorAvatar: user.avatarUrl || currentUserNetworkProfile.avatarUrl,
       authorHeadline: currentUserNetworkProfile.headline,
       timestamp: 'Just now',
@@ -352,7 +352,7 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
       id: `post-${Date.now()}`,
       author: {
         id: 'current-user',
-        name: user.name || 'Arun Kumar',
+        name: user.name || currentUserNetworkProfile.name,
         avatarUrl: user.avatarUrl || currentUserNetworkProfile.avatarUrl,
         headline: currentUserNetworkProfile.headline,
         company: user.college || 'University',
@@ -1137,17 +1137,30 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
             {/* Posts List */}
             {filteredPosts.length === 0 ? (
               <div className="bg-white dark:bg-[#151f38] border border-slate-200 dark:border-slate-800 rounded-3xl p-10 text-center space-y-3">
-                <span className="material-symbols-outlined text-[36px] text-slate-400">filter_list_off</span>
-                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No posts found in this filter.</p>
-                <button
-                  onClick={() => {
-                    setFeedFilter('all');
-                    setSelectedSkillTag('All');
-                  }}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl cursor-pointer"
-                >
-                  Reset Feed Filters
-                </button>
+                <span className="material-symbols-outlined text-[40px] text-purple-400">dynamic_feed</span>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                  {posts.length === 0
+                    ? 'No posts yet. Share an update, certificate, or project with your network!'
+                    : 'No posts found in this filter.'}
+                </p>
+                {posts.length === 0 ? (
+                  <button
+                    onClick={() => setShowCreatePostModal(true)}
+                    className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-transform active:scale-95"
+                  >
+                    + Create Your First Post
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setFeedFilter('all');
+                      setSelectedSkillTag('All');
+                    }}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl cursor-pointer"
+                  >
+                    Reset Feed Filters
+                  </button>
+                )}
               </div>
             ) : (
               <div className="space-y-5">

@@ -3,20 +3,22 @@ import { ViewType, UserProfile } from '../types';
 import { LOGO_URL, NEBULA_LOGO_URL } from '../data/mockData';
 
 interface OnboardingWizardProps {
+  user?: UserProfile;
   onComplete: (profile: Partial<UserProfile>) => void;
   onNavigate: (view: ViewType) => void;
 }
 
 export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
+  user,
   onComplete,
   onNavigate,
 }) => {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [name, setName] = useState('Arun Kumar');
-  const [college, setCollege] = useState('National Institute of Technology');
-  const [degree, setDegree] = useState('B.Tech Computer Science');
-  const [gradYear, setGradYear] = useState('2025');
-  const [targetRole, setTargetRole] = useState('Full Stack Developer');
+  const [name, setName] = useState(user?.name || '');
+  const [college, setCollege] = useState(user?.college || 'University Institute of Technology');
+  const [degree, setDegree] = useState(user?.degree || 'B.Tech Computer Science');
+  const [gradYear, setGradYear] = useState(user?.gradYear || '2026');
+  const [targetRole, setTargetRole] = useState(user?.targetRole || 'Full Stack Developer');
   const [selectedSkills, setSelectedSkills] = useState<string[]>([
     'HTML',
     'CSS',
@@ -299,7 +301,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             <img
               src={NEBULA_LOGO_URL}
               alt="Nebula AI"
-              className="w-10 h-10 object-contain animate-bounce"
+              className="w-full h-full object-cover rounded-full animate-bounce"
+              referrerPolicy="no-referrer"
             />
           </div>
 

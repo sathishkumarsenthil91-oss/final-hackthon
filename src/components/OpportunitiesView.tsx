@@ -115,11 +115,6 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
           >
             <span className="material-symbols-outlined text-[18px]">hub</span>
             <span>Connectivity</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-              activeSubsection === 'connectivity' ? 'bg-white/20 text-white' : 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300'
-            }`}>
-              Instagram-Style
-            </span>
           </button>
         </div>
       </div>

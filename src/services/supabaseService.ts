@@ -1,4 +1,5 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { supabase as existingSupabaseClient } from '../supabaseClient';
 import { NetworkUser, NetworkPost, NetworkConversation, NetworkMessage, UserLibraryItem, LibraryAccessRequest, UserProfile, GeneratedCertificate } from '../types';
 import { initialNetworkUsers, initialNetworkPosts, initialConversations } from './networkService';
 
@@ -6,21 +7,16 @@ import { initialNetworkUsers, initialNetworkPosts, initialConversations } from '
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-let supabaseInstance: SupabaseClient | null = null;
-
 export function getSupabaseClient(): SupabaseClient | null {
-  if (!supabaseInstance && supabaseUrl && supabaseAnonKey) {
-    try {
-      supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
-    } catch (err) {
-      console.warn('Failed to initialize Supabase client:', err);
-    }
+  // Reuse existing singleton Supabase client
+  if (existingSupabaseClient) {
+    return existingSupabaseClient as unknown as SupabaseClient;
   }
-  return supabaseInstance;
+  return null;
 }
 
 export const isSupabaseConfigured = (): boolean => {
-  return Boolean(supabaseUrl && supabaseAnonKey);
+  return Boolean((supabaseUrl && supabaseAnonKey) || existingSupabaseClient);
 };
 
 // Local storage persistent keys for synchronized real-user networking
@@ -150,7 +146,7 @@ export function getInitialUserLibraries(): Record<string, UserLibraryItem[]> {
 export function mapProfileToNetworkUser(user: UserProfile, libraryItems?: UserLibraryItem[]): NetworkUser {
   return {
     id: user.email ? `usr-${user.email.replace(/[^a-zA-Z0-9]/g, '_')}` : 'current-user-real',
-    name: user.name || 'Sathish Kumar',
+    name: user.name || (user.email ? user.email.split('@')[0] : 'Student Developer'),
     headline: user.headline || `${user.targetRole || 'Full Stack Engineer'} • ${user.college || 'Tech Institute'} '${user.gradYear || '2026'}`,
     avatarUrl: user.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
     coverUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1000&auto=format&fit=crop&q=80',

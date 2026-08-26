@@ -73,7 +73,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onNavigate, user }) =>
                 Student Dashboard
               </h3>
               <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2.5 py-1 rounded-full border border-blue-100 dark:border-blue-900">
-                LIVE DEMO
+                LIVE PREVIEW
               </span>
             </div>
 

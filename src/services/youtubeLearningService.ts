@@ -78,7 +78,7 @@ export const STARTER_YOUTUBE_TRACKS: YouTubeLearningTrack[] = [
     learningRecord: {
       recordId: 'IS-REC-YTL-2026-TS92A',
       userId: 'default',
-      userName: 'Arun Kumar',
+      userName: 'Verified Learner',
       videoTitle: 'TypeScript 5.x Advanced Generics & Strict Enterprise Patterns',
       channel: 'Jack Herrington / Senior Engineer',
       videoId: 'ahCwqrYqo9o',

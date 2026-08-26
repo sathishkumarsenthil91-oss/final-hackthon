@@ -221,7 +221,7 @@ export const initialNetworkUsers: NetworkUser[] = [
     followersCount: 3400,
     followingCount: 520,
     isFollowing: false,
-    isPrivate: true, // Private account to demonstrate follow request flow!
+    isPrivate: true,
     mutualCount: 14,
     skills: ['React', 'TypeScript', 'Next.js', 'Tailwind CSS', 'Node.js', 'PostgreSQL'],
     onlineStatus: 'online',
@@ -260,150 +260,7 @@ export const initialNetworkUsers: NetworkUser[] = [
   },
 ];
 
-export const initialNetworkPosts: NetworkPost[] = [
-  {
-    id: 'post-1',
-    author: {
-      id: 'user-priya-sharma',
-      name: 'Priya Sharma',
-      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80',
-      headline: 'Senior Staff Engineer @ Google Cloud',
-      company: 'Google',
-    },
-    timestamp: '2 hours ago',
-    content: `Thrilled to share that our Distributed Systems & Cloud Microservices masterclass on IndustrySkill just surpassed 10,000 enrolled engineers! 🚀
-
-For anyone studying distributed consensus and gRPC networking: remember that 90% of production latency bottlenecks stem from unmonitored tail latency and unoptimized connection pooling, not compute bottlenecks.
-
-Here is a quick architectural checklist every backend engineer should memorize when preparing for Tier-1 systems rounds:
-1. Always implement idempotency keys for mutative HTTP/RPC endpoints.
-2. Design circuit breakers with jittered exponential backoffs.
-3. Decouple hot state transitions using event-driven streaming buffers.
-
-Keep building and earning those verified certs! Drop your questions below 👇`,
-    tags: ['#DistributedSystems', '#GoogleCloud', '#SystemDesign', '#BackendEngineering', '#CareerAdvice'],
-    skills: ['Distributed Systems', 'Go (Golang)', 'Kubernetes', 'System Design'],
-    likesCount: 342,
-    isLiked: false,
-    commentsCount: 28,
-    repostsCount: 45,
-    isReposted: false,
-    imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
-    comments: [
-      {
-        id: 'c1-1',
-        authorId: 'user-marcus-chen',
-        authorName: 'Marcus Chen',
-        authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-        authorHeadline: 'Lead Recruiter @ Stripe',
-        timestamp: '1 hour ago',
-        content: 'Spot on Priya! We specifically test idempotency patterns during our technical pair-programming rounds at Stripe.',
-        likesCount: 19,
-        isLiked: false,
-      },
-      {
-        id: 'c1-2',
-        authorId: 'user-rahul-patel',
-        authorName: 'Rahul Patel',
-        authorAvatar: USER_ALT_PHOTO,
-        authorHeadline: 'Full Stack Engineer @ TechNova',
-        timestamp: '45 mins ago',
-        content: 'The jittered exponential backoff tip saved our webhook service from thundering herd issues last week. Essential advice!',
-        likesCount: 8,
-        isLiked: false,
-      },
-    ],
-  },
-  {
-    id: 'post-2',
-    author: {
-      id: 'user-marcus-chen',
-      name: 'Marcus Chen',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-      headline: 'Technical Recruiter & University Talent @ Stripe',
-      company: 'Stripe',
-    },
-    timestamp: '4 hours ago',
-    content: `📢 HIRING ALERT: Stripe Software Engineering Internships & New Grad 2026 Applications are officially OPEN!
-
-We are looking for students who care deeply about developer experience, resilient distributed systems, and modern web infrastructure.
-
-What stands out on an applicant's profile:
-✅ Verified skill completion records & practical course certificates
-✅ Real shipped open-source repos (not just tutorial clones)
-✅ Demonstrated knowledge of API security, type safety, and testing
-
-Check out the opportunities tab or apply directly. Let's poll: Which area of tech are you most excited to specialize in this year?`,
-    tags: ['#StripeJobs', '#Internships2026', '#NewGrads', '#SoftwareEngineering', '#TechHiring'],
-    skills: ['Technical Recruiting', 'Campus Hiring', 'Career Strategy'],
-    likesCount: 512,
-    isLiked: false,
-    commentsCount: 64,
-    repostsCount: 118,
-    isReposted: false,
-    poll: {
-      question: 'Which engineering track is your primary focus for 2026 roles?',
-      options: [
-        { id: 'opt-1', text: 'Full Stack & Web Architecture (React/Node)', votes: 310 },
-        { id: 'opt-2', text: 'Cloud Infrastructure & DevOps (K8s/Go/AWS)', votes: 195 },
-        { id: 'opt-3', text: 'AI / ML & Agentic Systems (Gemini/PyTorch)', votes: 260 },
-        { id: 'opt-4', text: 'Fintech, APIs & Distributed Databases', votes: 140 },
-      ],
-      totalVotes: 905,
-    },
-    comments: [
-      {
-        id: 'c2-1',
-        authorId: 'user-priya-sharma',
-        authorName: 'Priya Sharma',
-        authorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80',
-        authorHeadline: 'Senior Staff Engineer @ Google Cloud',
-        timestamp: '3 hours ago',
-        content: 'Great initiative Marcus. Stripe’s developer culture is top tier.',
-        likesCount: 14,
-        isLiked: false,
-      },
-    ],
-  },
-  {
-    id: 'post-3',
-    author: {
-      id: 'user-elena-rostova',
-      name: 'Elena Rostova',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-      headline: 'Research Scientist @ Google DeepMind',
-      company: 'Google DeepMind',
-    },
-    timestamp: '7 hours ago',
-    content: `Proud to release our open-source benchmark for evaluating verifiable reasoning trajectories in Large Language Models! 🧠✨
-
-When building agentic workflows with Gemini, function calling reliability increases dramatically when you enforce structured Zod schemas at compile-time and provide execution feedback in multi-turn reasoning loops.
-
-Check out the code snippet below demonstrating how we construct verifiable tool manifests:`,
-    tags: ['#AIResearch', '#DeepMind', '#Gemini', '#MachineLearning', '#Python'],
-    skills: ['PyTorch', 'Transformers', 'AI Safety', 'Python'],
-    likesCount: 780,
-    isLiked: true,
-    commentsCount: 42,
-    repostsCount: 92,
-    isReposted: false,
-    codeSnippet: {
-      language: 'typescript',
-      code: `// Verifiable Agentic Tool Manifest Definition
-import { z } from 'zod';
-
-export const CodeExecutionSchema = z.object({
-  environment: z.enum(['node20', 'python3.12', 'rust-nightly']),
-  sourceCode: z.string().min(1, "Code payload required"),
-  timeoutSeconds: z.number().max(30).default(10),
-  allowNetwork: z.boolean().default(false),
-});
-
-export type CodeExecutionPayload = z.infer<typeof CodeExecutionSchema>;`,
-    },
-    comments: [],
-  },
-];
+export const initialNetworkPosts: NetworkPost[] = [];
 
 export const initialConversations: NetworkConversation[] = [
   {
@@ -417,7 +274,7 @@ export const initialConversations: NetworkConversation[] = [
         id: 'm1',
         senderId: 'user-priya-sharma',
         receiverId: 'current-user',
-        content: 'Hi Arun! Saw your recent verified certificate in Advanced Cloud Microservices. Congratulations!',
+        content: 'Hi! Saw your recent verified certificate in Advanced Cloud Microservices. Congratulations!',
         timestamp: '10:40 AM',
         isRead: true,
       },
@@ -492,7 +349,16 @@ export function loadNetworkPosts(currentUser: UserProfile): NetworkPost[] {
   try {
     const raw = localStorage.getItem(NETWORK_POSTS_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed: NetworkPost[] = JSON.parse(raw);
+      // Filter out any legacy hardcoded demo posts
+      return parsed.filter(
+        (p) =>
+          !p.id.startsWith('post-priya-') &&
+          !p.id.startsWith('post-elena-') &&
+          !p.id.startsWith('post-marcus-') &&
+          !p.id.startsWith('post-rahul-') &&
+          !p.id.startsWith('demo-')
+      );
     }
   } catch (e) {
     console.error('Failed to load posts from storage', e);

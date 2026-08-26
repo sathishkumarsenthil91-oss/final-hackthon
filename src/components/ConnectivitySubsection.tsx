@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   UserProfile,
   NetworkUser,
@@ -50,9 +50,11 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
   const [activeStoryUser, setActiveStoryUser] = useState<NetworkUser | null>(null);
   const [selectedCertificatePreview, setSelectedCertificatePreview] = useState<GeneratedCertificate | null>(null);
 
-  // New post form state
+  // New post form state & gallery image upload
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostImage, setNewPostImage] = useState('');
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const galleryFileInputRef = useRef<HTMLInputElement>(null);
   const [newPostCodeLang, setNewPostCodeLang] = useState('typescript');
   const [newPostCode, setNewPostCode] = useState('');
   const [showCodeInput, setShowCodeInput] = useState(false);
@@ -71,6 +73,39 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // Gallery image file processor
+  const processImageFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WebP, GIF)');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (result) {
+        setNewPostImage(result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processImageFile(file);
+    }
+    e.target.value = '';
+  };
+
+  const handleImageDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingImage(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processImageFile(file);
+    }
   };
 
   // Load real data on mount & whenever user updates
@@ -337,75 +372,13 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
       </header>
 
       {/* ========================================================================= */}
-      {/* 1. HOME TAB: Feed, Live Active Learners Story Bar, Posts */}
+      {/* 1. HOME TAB: Post Feed */}
       {/* ========================================================================= */}
       {activeTab === 'home' && (
         <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 pt-5 pb-24">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {/* Main Feed Column (Cols 1-2 on desktop, full width on mobile) */}
             <div className="lg:col-span-2 space-y-6">
-          {/* Instagram-style Active Learners / Live Study Stories Bar */}
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
-            <div className="flex items-center justify-between mb-3 px-1">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                Live Active Learners
-              </span>
-              <span className="text-[11px] text-slate-600 dark:text-slate-300 font-semibold">
-                {users.length + 1} connected builders
-              </span>
-            </div>
-
-            <div className="flex items-center gap-4 overflow-x-auto pb-2 scrollbar-thin">
-              {/* Current User Story Bubble */}
-              <div
-                onClick={() => {
-                  setViewingUser(null);
-                  setActiveTab('profile');
-                  setProfileTab('library');
-                }}
-                className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group"
-              >
-                <div className="relative p-0.5 rounded-full bg-gradient-to-tr from-purple-500 via-pink-500 to-amber-400 group-hover:scale-105 transition-transform">
-                  <img
-                    src={currentUserMapped.avatarUrl}
-                    alt={currentUserMapped.name}
-                    className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-[#131b2e]"
-                  />
-                  <span className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-purple-600 text-white flex items-center justify-center text-[10px] font-black border border-white dark:border-[#131b2e]">
-                    +
-                  </span>
-                </div>
-                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 max-w-[64px] truncate text-center">
-                  Your Library
-                </span>
-              </div>
-
-              {/* Connected Users Stories */}
-              {users.map((u) => (
-                <div
-                  key={u.id}
-                  onClick={() => setActiveStoryUser(u)}
-                  className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group"
-                >
-                  <div className="relative p-0.5 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 group-hover:scale-105 transition-transform">
-                    <img
-                      src={u.avatarUrl}
-                      alt={u.name}
-                      className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-[#131b2e]"
-                    />
-                    {u.onlineStatus === 'online' && (
-                      <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-[#131b2e]" />
-                    )}
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 max-w-[68px] truncate text-center">
-                    {u.name.split(' ')[0]}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Quick Post Prompt Bar */}
           <div
             onClick={() => setShowCreatePostModal(true)}
@@ -1645,18 +1618,85 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                 className="w-full bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none border border-slate-200 dark:border-slate-700 focus:border-purple-500 resize-none"
               />
 
-              {/* Media URL Attachment */}
+              {/* Direct Gallery Image Attachment with Preview */}
               <div>
                 <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  Image Attachment URL (Optional)
+                  Image Attachment (Gallery Upload)
                 </label>
+                
+                {/* Hidden File Input */}
                 <input
-                  type="url"
-                  value={newPostImage}
-                  onChange={(e) => setNewPostImage(e.target.value)}
-                  placeholder="https://images.unsplash.com/photo-..."
-                  className="w-full bg-slate-50 dark:bg-slate-800/60 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none border border-slate-200 dark:border-slate-700"
+                  type="file"
+                  accept="image/*"
+                  ref={galleryFileInputRef}
+                  onChange={handleImageFileChange}
+                  className="hidden"
                 />
+
+                {!newPostImage ? (
+                  <div
+                    onClick={() => galleryFileInputRef.current?.click()}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDraggingImage(true);
+                    }}
+                    onDragLeave={() => setIsDraggingImage(false)}
+                    onDrop={handleImageDrop}
+                    className={`w-full border-2 border-dashed rounded-xl p-4 sm:p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${
+                      isDraggingImage
+                        ? 'border-purple-500 bg-purple-50/50 dark:bg-purple-950/20'
+                        : 'border-slate-300 dark:border-slate-700 hover:border-purple-400 bg-slate-50/50 dark:bg-slate-800/40'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[22px]">add_photo_alternate</span>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                        Click to upload from gallery or drag & drop
+                      </p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Supports PNG, JPG, WebP, GIF (direct local upload)
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-900 group">
+                    <img
+                      src={newPostImage}
+                      alt="Post upload preview"
+                      className="w-full max-h-56 object-cover"
+                    />
+                    {/* Overlay Action Buttons */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+                      <button
+                        type="button"
+                        onClick={() => galleryFileInputRef.current?.click()}
+                        className="px-3 py-1.5 rounded-lg bg-white/90 hover:bg-white text-slate-900 text-xs font-bold flex items-center gap-1 shadow-md cursor-pointer transition-transform hover:scale-105"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">refresh</span>
+                        Change Image
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewPostImage('')}
+                        className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-1 shadow-md cursor-pointer transition-transform hover:scale-105"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                        Remove
+                      </button>
+                    </div>
+                    {/* Permanent small top-right delete button */}
+                    <button
+                      type="button"
+                      onClick={() => setNewPostImage('')}
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer shadow-md"
+                      title="Remove image"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">close</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Code Snippet Option */}

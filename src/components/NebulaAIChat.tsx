@@ -461,57 +461,59 @@ How can I help you today? Type below or pick a quick starter prompt!`,
   );
 
   return (
-    <main className="pt-20 md:pt-24 pb-24 px-4 sm:px-6 max-w-5xl mx-auto flex flex-col h-[calc(100vh-20px)]">
+    <main className="pt-16 sm:pt-20 md:pt-24 pb-20 md:pb-6 px-2 sm:px-4 md:px-6 max-w-5xl mx-auto flex flex-col h-[100dvh] md:h-[calc(100vh-20px)] w-full overflow-hidden">
       {/* Top Header Card */}
-      <div className="bg-white dark:bg-[#151f38] rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-md mb-3 flex flex-wrap justify-between items-center gap-3">
+      <div className="bg-white dark:bg-[#151f38] rounded-2xl sm:rounded-3xl p-2 sm:p-4 md:p-5 border border-slate-200/80 dark:border-slate-800 shadow-xs sm:shadow-md mb-1.5 sm:mb-3 flex items-center justify-between gap-2 shrink-0">
         {/* Left: Avatar & Model Info */}
-        <div className="flex items-center gap-3">
-          <div className="relative w-13 h-13 rounded-full p-0.5 bg-gradient-to-tr from-blue-500 via-indigo-500 to-purple-500 shadow-lg shadow-blue-500/25 shrink-0">
-            <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 border-2 border-white/20">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="relative w-8 h-8 sm:w-11 sm:h-11 rounded-full p-0.5 bg-gradient-to-tr from-blue-500 via-indigo-500 to-purple-500 shadow-xs shrink-0">
+            <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 border border-white/20">
               <img
                 src={NEBULA_LOGO_URL}
-                alt="Nebula AI Circular Logo"
+                alt="Nebula AI Logo"
                 className="w-full h-full object-cover rounded-full"
                 referrerPolicy="no-referrer"
               />
             </div>
-            <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
+            <span className="absolute bottom-0 right-0 w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                Nebula AI Realtime Chatbot
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-xs sm:text-base md:text-lg font-black text-slate-900 dark:text-white tracking-tight truncate">
+                Nebula AI Chat
               </h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                28+ Languages
+              <span className="px-1.5 py-0.2 sm:py-0.5 rounded-full text-[8px] sm:text-[10px] font-black bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
+                28+ Langs
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
-              <span>Gemini 3.7 Flash & 3.1 Pro</span>
-              <span>•</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">SSE Realtime Stream</span>
+            <p className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 truncate">
+              <span className="hidden sm:inline">Gemini 3.7 Flash •</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-ping" />
+                Live
+              </span>
             </p>
           </div>
         </div>
 
         {/* Right: Controls (Language Selector, Thinking Mode, Actions) */}
-        <div className="flex items-center flex-wrap gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Language Selector Dropdown */}
           <div className="relative" ref={langDropdownRef}>
             <button
               onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+              className="px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1 transition-all cursor-pointer shadow-xs"
               title="Select Language for Chatbot"
             >
-              <span className="text-sm">{selectedLangObj.flag}</span>
-              <span>{selectedLangObj.name}</span>
-              <span className="material-symbols-outlined text-[14px]">
+              <span className="text-xs sm:text-sm">{selectedLangObj.flag}</span>
+              <span className="hidden xs:inline max-w-[50px] sm:max-w-[100px] truncate">{selectedLangObj.name}</span>
+              <span className="material-symbols-outlined text-[13px] sm:text-[14px]">
                 {isLangDropdownOpen ? 'expand_less' : 'expand_more'}
               </span>
             </button>
 
             {isLangDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-[#11192e] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2.5 z-50 animate-in fade-in max-h-80 overflow-y-auto">
+              <div className="fixed sm:absolute right-2 sm:right-0 top-16 sm:top-auto sm:mt-2 w-[calc(100vw-24px)] sm:w-72 max-w-xs bg-white dark:bg-[#11192e] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2.5 z-50 animate-in fade-in max-h-72 overflow-y-auto">
                 <div className="p-1.5 pb-2 border-b border-slate-100 dark:border-slate-800 mb-1.5">
                   <input
                     type="text"
@@ -551,98 +553,98 @@ How can I help you today? Type below or pick a quick starter prompt!`,
           {/* Deep Reasoning Thinking Mode Toggle */}
           <button
             onClick={() => setIsThinkingMode(!isThinkingMode)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs border ${
+            className={`px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-xs border ${
               isThinkingMode
                 ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-purple-500 shadow-purple-500/20'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
             }`}
-            title="Toggle Gemini 3.1 Pro High Thinking"
+            title="Toggle Gemini Thinking Mode"
           >
-            <span className="material-symbols-outlined text-[16px]">psychology</span>
-            <span>{isThinkingMode ? 'Thinking: HIGH' : 'Fast Mode'}</span>
+            <span className="material-symbols-outlined text-[13px] sm:text-[16px]">psychology</span>
+            <span className="hidden xs:inline">{isThinkingMode ? 'Thinking' : 'Fast'}</span>
           </button>
 
           {/* Export Chat */}
           <button
             onClick={handleExportChat}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer shadow-xs"
+            className="p-1 sm:p-2 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer shadow-xs"
             title="Export Chat as Markdown"
           >
-            <span className="material-symbols-outlined text-[16px]">download</span>
+            <span className="material-symbols-outlined text-[13px] sm:text-[16px]">download</span>
           </button>
 
           {/* Clear Chat */}
           <button
             onClick={handleClearChat}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 cursor-pointer shadow-xs"
+            className="p-1 sm:p-2 rounded-lg sm:rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 cursor-pointer shadow-xs"
             title="Clear Chat History"
           >
-            <span className="material-symbols-outlined text-[16px]">delete_sweep</span>
+            <span className="material-symbols-outlined text-[13px] sm:text-[16px]">delete_sweep</span>
           </button>
         </div>
       </div>
 
       {/* Mode Specialization Switcher Bar */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-2 scrollbar-none">
+      <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 mb-1.5 sm:mb-2 scrollbar-none shrink-0">
         <button
           onClick={() => setActiveMode('career')}
-          className={`px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+          className={`px-2.5 sm:px-3 py-1 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             activeMode === 'career'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'bg-white dark:bg-[#151f38] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-blue-400'
           }`}
         >
           <span className="material-symbols-outlined text-[14px]">school</span>
-          Career & Skills Mentor
+          Career & Skills
         </button>
         <button
           onClick={() => setActiveMode('code')}
-          className={`px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+          className={`px-2.5 sm:px-3 py-1 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             activeMode === 'code'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'bg-white dark:bg-[#151f38] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-blue-400'
           }`}
         >
           <span className="material-symbols-outlined text-[14px]">code</span>
-          Live Code & Debugger
+          Live Code
         </button>
         <button
           onClick={() => setActiveMode('interview')}
-          className={`px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+          className={`px-2.5 sm:px-3 py-1 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             activeMode === 'interview'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'bg-white dark:bg-[#151f38] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-blue-400'
           }`}
         >
           <span className="material-symbols-outlined text-[14px]">record_voice_over</span>
-          Mock Interviewer
+          Mock Interview
         </button>
         <button
           onClick={() => setActiveMode('safety')}
-          className={`px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+          className={`px-2.5 sm:px-3 py-1 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             activeMode === 'safety'
               ? 'bg-rose-600 text-white shadow-xs'
               : 'bg-white dark:bg-[#151f38] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-rose-400'
           }`}
         >
           <span className="material-symbols-outlined text-[14px]">security</span>
-          Job Scam & Offer Auditor
+          Offer Auditor
         </button>
         <button
           onClick={() => setActiveMode('bilingual')}
-          className={`px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+          className={`px-2.5 sm:px-3 py-1 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             activeMode === 'bilingual'
               ? 'bg-purple-600 text-white shadow-xs'
               : 'bg-white dark:bg-[#151f38] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-purple-400'
           }`}
         >
           <span className="material-symbols-outlined text-[14px]">translate</span>
-          Bilingual CS Tutor
+          Bilingual CS
         </button>
       </div>
 
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto space-y-4 pr-1 mb-3 scroll-smooth">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 sm:space-y-4 pr-1 mb-2 sm:mb-3 scroll-smooth touch-pan-y">
         {messages.map((msg) => {
           const isUser = msg.role === 'user';
           return (
@@ -651,7 +653,7 @@ How can I help you today? Type below or pick a quick starter prompt!`,
               className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-in fade-in duration-200`}
             >
               <div
-                className={`max-w-[90%] sm:max-w-[80%] rounded-3xl p-4 sm:p-5 text-sm leading-relaxed shadow-xs ${
+                className={`max-w-[94%] sm:max-w-[85%] md:max-w-[80%] rounded-2xl sm:rounded-3xl p-3 sm:p-4 text-xs sm:text-sm leading-relaxed shadow-xs ${
                   isUser
                     ? 'bg-blue-600 text-white rounded-br-xs'
                     : 'bg-white dark:bg-[#151f38] text-slate-900 dark:text-slate-100 rounded-bl-xs border border-slate-200/80 dark:border-slate-800'
@@ -659,9 +661,9 @@ How can I help you today? Type below or pick a quick starter prompt!`,
               >
                 {/* AI Header with Badges and Audio Button */}
                 {!isUser && (
-                  <div className="flex items-center justify-between gap-2 mb-2.5 pb-2 border-b border-slate-100 dark:border-slate-800/80">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full overflow-hidden p-0.5 bg-gradient-to-tr from-blue-500 to-indigo-600 shadow-xs shrink-0">
+                  <div className="flex items-center justify-between gap-1.5 mb-2 pb-1.5 border-b border-slate-100 dark:border-slate-800/80">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full overflow-hidden p-0.5 bg-gradient-to-tr from-blue-500 to-indigo-600 shadow-xs shrink-0">
                         <img
                           src={NEBULA_LOGO_URL}
                           alt="Nebula"
@@ -669,33 +671,28 @@ How can I help you today? Type below or pick a quick starter prompt!`,
                           referrerPolicy="no-referrer"
                         />
                       </div>
-                      <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                        Nebula AI
+                      <span className="text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400">
+                        Nebula
                       </span>
                       {msg.thinkingModeActive && (
-                        <span className="text-[10px] bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-300 px-2 py-0.5 rounded-full font-bold border border-purple-200 dark:border-purple-800">
-                          🧠 Deep Reasoning
-                        </span>
-                      )}
-                      {msg.modelUsed && (
-                        <span className="hidden sm:inline-block text-[10px] text-slate-400 font-mono">
-                          {msg.modelUsed}
+                        <span className="text-[9px] sm:text-[10px] bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded-full font-bold border border-purple-200 dark:border-purple-800 shrink-0">
+                          🧠 Reasoning
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
                       {/* Audio Speak Aloud */}
                       <button
                         onClick={() => handleSpeakText(msg.translatedContent || msg.content, msg.id)}
-                        className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                        className={`p-1 sm:p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
                           isSpeaking === msg.id
                             ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 animate-pulse'
                             : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                         }`}
-                        title={isSpeaking === msg.id ? 'Stop Speaking' : 'Read Aloud in Selected Language'}
+                        title={isSpeaking === msg.id ? 'Stop Speaking' : 'Read Aloud'}
                       >
-                        <span className="material-symbols-outlined text-[16px]">
+                        <span className="material-symbols-outlined text-[15px] sm:text-[16px]">
                           {isSpeaking === msg.id ? 'volume_off' : 'volume_up'}
                         </span>
                       </button>
@@ -704,10 +701,10 @@ How can I help you today? Type below or pick a quick starter prompt!`,
                       <button
                         onClick={() => handleTranslateMessage(msg.id, msg.content, selectedLanguage === 'auto' ? 'English' : selectedLanguage)}
                         disabled={msg.isTranslating}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 text-xs transition-colors cursor-pointer"
-                        title="Translate to Selected Language"
+                        className="p-1 sm:p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 text-xs transition-colors cursor-pointer"
+                        title="Translate"
                       >
-                        <span className="material-symbols-outlined text-[16px]">
+                        <span className="material-symbols-outlined text-[15px] sm:text-[16px]">
                           {msg.isTranslating ? 'sync' : 'translate'}
                         </span>
                       </button>
@@ -715,10 +712,10 @@ How can I help you today? Type below or pick a quick starter prompt!`,
                       {/* Copy Message */}
                       <button
                         onClick={() => handleCopy(msg.translatedContent || msg.content, msg.id)}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 text-xs transition-colors cursor-pointer"
+                        className="p-1 sm:p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 text-xs transition-colors cursor-pointer"
                         title="Copy message"
                       >
-                        <span className="material-symbols-outlined text-[16px]">
+                        <span className="material-symbols-outlined text-[15px] sm:text-[16px]">
                           {copiedId === msg.id ? 'check' : 'content_copy'}
                         </span>
                       </button>
@@ -727,20 +724,20 @@ How can I help you today? Type below or pick a quick starter prompt!`,
                 )}
 
                 {/* Primary Content formatted */}
-                <div className="whitespace-pre-wrap font-sans leading-relaxed text-sm">
+                <div className="whitespace-pre-wrap font-sans leading-relaxed text-xs sm:text-sm break-words">
                   {msg.content}
                 </div>
 
                 {/* Optional Translated View */}
                 {msg.translatedContent && (
-                  <div className="mt-3 pt-3 border-t border-blue-200 dark:border-slate-700 bg-blue-50/50 dark:bg-slate-900/60 p-3 rounded-2xl">
-                    <div className="flex items-center justify-between text-[11px] font-bold text-blue-600 dark:text-blue-400 mb-1">
+                  <div className="mt-2.5 pt-2 border-t border-blue-200 dark:border-slate-700 bg-blue-50/50 dark:bg-slate-900/60 p-2 sm:p-3 rounded-xl sm:rounded-2xl">
+                    <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-bold text-blue-600 dark:text-blue-400 mb-1">
                       <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px]">translate</span>
-                        Translated Version ({selectedLanguage})
+                        <span className="material-symbols-outlined text-[13px] sm:text-[14px]">translate</span>
+                        Translated ({selectedLanguage})
                       </span>
                     </div>
-                    <div className="whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-200">
+                    <div className="whitespace-pre-wrap text-xs sm:text-sm text-slate-800 dark:text-slate-200 break-words">
                       {msg.translatedContent}
                     </div>
                   </div>
@@ -748,12 +745,12 @@ How can I help you today? Type below or pick a quick starter prompt!`,
 
                 {/* Timestamp */}
                 <div
-                  className={`text-[10px] mt-2 flex items-center justify-end gap-1 ${
+                  className={`text-[9px] sm:text-[10px] mt-1.5 flex items-center justify-end gap-1 ${
                     isUser ? 'text-blue-100' : 'text-slate-400'
                   }`}
                 >
                   <span>{msg.timestamp}</span>
-                  {isUser && <span className="material-symbols-outlined text-[12px]">done_all</span>}
+                  {isUser && <span className="material-symbols-outlined text-[11px] sm:text-[12px]">done_all</span>}
                 </div>
               </div>
             </div>
@@ -763,33 +760,33 @@ How can I help you today? Type below or pick a quick starter prompt!`,
         {/* Live Streaming Response Card */}
         {isLoading && (
           <div className="flex justify-start animate-in fade-in">
-            <div className="max-w-[90%] sm:max-w-[80%] bg-white dark:bg-[#151f38] text-slate-900 dark:text-slate-100 rounded-3xl rounded-bl-xs p-4 sm:p-5 border border-blue-200 dark:border-blue-900/60 shadow-md space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 animate-spin text-[18px]">
+            <div className="max-w-[94%] sm:max-w-[85%] md:max-w-[80%] bg-white dark:bg-[#151f38] text-slate-900 dark:text-slate-100 rounded-2xl sm:rounded-3xl rounded-bl-xs p-3 sm:p-4 border border-blue-200 dark:border-blue-900/60 shadow-md space-y-2">
+              <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 animate-spin text-[16px] shrink-0">
                     progress_activity
                   </span>
-                  <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                    Nebula AI Streaming in Real-Time...
+                  <span className="text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 truncate">
+                    Streaming...
                   </span>
                 </div>
                 <button
                   onClick={handleStopGeneration}
-                  className="px-2.5 py-1 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-300 hover:bg-red-100 text-xs font-bold rounded-lg border border-red-200 dark:border-red-900 flex items-center gap-1 cursor-pointer"
+                  className="px-2 py-0.5 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-300 hover:bg-red-100 text-[11px] font-bold rounded-lg border border-red-200 dark:border-red-900 flex items-center gap-1 cursor-pointer shrink-0"
                 >
-                  <span className="material-symbols-outlined text-[14px]">stop_circle</span>
+                  <span className="material-symbols-outlined text-[13px]">stop_circle</span>
                   Stop
                 </button>
               </div>
 
               {streamingText ? (
-                <div className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                <div className="whitespace-pre-wrap font-sans text-xs sm:text-sm leading-relaxed break-words">
                   {streamingText}
-                  <span className="inline-block w-2 h-4 bg-blue-600 dark:bg-blue-400 ml-1 animate-pulse" />
+                  <span className="inline-block w-1.5 h-3.5 bg-blue-600 dark:bg-blue-400 ml-1 animate-pulse" />
                 </div>
               ) : (
-                <div className="text-xs text-slate-400 flex items-center gap-2">
-                  <span>Synthesizing response for {user.targetRole} in {selectedLangObj.name}...</span>
+                <div className="text-[11px] sm:text-xs text-slate-400 flex items-center gap-1.5">
+                  <span>Synthesizing response for {user.targetRole}...</span>
                 </div>
               )}
             </div>
@@ -799,13 +796,13 @@ How can I help you today? Type below or pick a quick starter prompt!`,
       </div>
 
       {/* Quick Prompt Category Tabs & Chips */}
-      <div className="space-y-2 mb-2">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+      <div className="space-y-1 sm:space-y-1.5 mb-1.5 sm:mb-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
           {(['all', 'career', 'code', 'interview', 'safety'] as const).map((cat) => (
             <button
               key={cat}
               onClick={() => setActivePromptCategory(cat)}
-              className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold uppercase cursor-pointer transition-colors ${
+              className={`px-2 sm:px-2.5 py-0.5 rounded-md sm:rounded-lg text-[10px] sm:text-[11px] font-bold uppercase cursor-pointer transition-colors shrink-0 ${
                 activePromptCategory === cat
                   ? 'bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900'
                   : 'bg-slate-100 dark:bg-slate-800/80 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -816,13 +813,13 @@ How can I help you today? Type below or pick a quick starter prompt!`,
           ))}
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-0.5 scrollbar-none">
           {filteredPrompts.map((prompt, idx) => (
             <button
               key={idx}
               onClick={() => handleSendMessage(prompt.text)}
               disabled={isLoading}
-              className="text-xs whitespace-nowrap bg-white dark:bg-[#151f38] text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all cursor-pointer font-medium disabled:opacity-50 shadow-2xs"
+              className="text-[11px] sm:text-xs whitespace-nowrap bg-white dark:bg-[#151f38] text-blue-600 dark:text-blue-400 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-slate-200/80 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all cursor-pointer font-medium disabled:opacity-50 shadow-2xs shrink-0"
             >
               {prompt.text}
             </button>
@@ -831,28 +828,28 @@ How can I help you today? Type below or pick a quick starter prompt!`,
       </div>
 
       {/* Input Box & Action Toolbar */}
-      <div className="relative bg-white dark:bg-[#151f38] rounded-3xl p-2.5 border border-slate-200/90 dark:border-slate-800 shadow-lg flex flex-col gap-2">
-        <div className="flex items-center gap-2">
+      <div className="relative bg-white dark:bg-[#151f38] rounded-2xl sm:rounded-3xl p-1.5 sm:p-2.5 border border-slate-200/90 dark:border-slate-800 shadow-md sm:shadow-lg flex flex-col gap-1 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2">
           {/* Code Insert Button */}
           <button
             onClick={() => setIsCodeModalOpen(true)}
-            className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+            className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer shrink-0"
             title="Attach Code Snippet"
           >
-            <span className="material-symbols-outlined text-[20px]">code_blocks</span>
+            <span className="material-symbols-outlined text-[18px] sm:text-[20px]">code_blocks</span>
           </button>
 
           {/* Voice Input Button */}
           <button
             onClick={toggleSpeechRecognition}
-            className={`p-2 rounded-xl transition-all cursor-pointer ${
+            className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all cursor-pointer shrink-0 ${
               isListening
                 ? 'bg-red-500 text-white animate-bounce shadow-md shadow-red-500/30'
                 : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600'
             }`}
             title={isListening ? 'Listening (Click to Stop)' : `Voice Input (${selectedLangObj.name})`}
           >
-            <span className="material-symbols-outlined text-[20px]">
+            <span className="material-symbols-outlined text-[18px] sm:text-[20px]">
               {isListening ? 'mic' : 'mic_none'}
             </span>
           </button>
@@ -865,33 +862,33 @@ How can I help you today? Type below or pick a quick starter prompt!`,
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
             placeholder={
               isListening
-                ? `Listening in ${selectedLangObj.name}... speak now`
-                : `Ask Nebula AI anything in ${selectedLangObj.name} (Code, Interview, Roadmap)...`
+                ? `Listening in ${selectedLangObj.name}...`
+                : `Ask Nebula AI (${selectedLangObj.name})...`
             }
-            className="w-full bg-transparent border-none outline-none px-2 py-1.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400"
+            className="w-full bg-transparent border-none outline-none px-1.5 sm:px-2 py-1 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 min-w-0"
           />
 
           {/* Send Button */}
           <button
             onClick={() => handleSendMessage()}
             disabled={!inputMessage.trim() || isLoading}
-            className="w-10 h-10 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white flex items-center justify-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 shadow-md transition-transform active:scale-95"
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white flex items-center justify-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0 shadow-md transition-transform active:scale-95"
             title="Send Message"
           >
-            <span className="material-symbols-outlined text-[20px]">send</span>
+            <span className="material-symbols-outlined text-[17px] sm:text-[20px]">send</span>
           </button>
         </div>
       </div>
 
       {/* Code Snippet Attachment Modal */}
       {isCodeModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#11192e] rounded-3xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-in zoom-in-95">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white dark:bg-[#11192e] rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3 sm:space-y-4 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-blue-600 dark:text-blue-400">code_blocks</span>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Attach Code for Review & Debugging
+                <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[20px]">code_blocks</span>
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                  Attach Code for Review
                 </h3>
               </div>
               <button
@@ -902,7 +899,7 @@ How can I help you today? Type below or pick a quick starter prompt!`,
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5 sm:space-y-3">
               <div>
                 <label className="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1">
                   Programming Language
@@ -910,7 +907,7 @@ How can I help you today? Type below or pick a quick starter prompt!`,
                 <select
                   value={codeLanguage}
                   onChange={(e) => setCodeLanguage(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none"
+                  className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white outline-none"
                 >
                   <option value="TypeScript">TypeScript</option>
                   <option value="JavaScript">JavaScript</option>
@@ -929,26 +926,26 @@ How can I help you today? Type below or pick a quick starter prompt!`,
                   Paste Code / Error Stacktrace
                 </label>
                 <textarea
-                  rows={6}
+                  rows={5}
                   value={codeSnippet}
                   onChange={(e) => setCodeSnippet(e.target.value)}
                   placeholder="Paste your code snippet or error trace here..."
-                  className="w-full p-3 font-mono text-xs bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-900 dark:text-slate-100 outline-none resize-none"
+                  className="w-full p-2.5 sm:p-3 font-mono text-xs bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl text-slate-900 dark:text-slate-100 outline-none resize-none"
                 />
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-1 sm:pt-2">
               <button
                 onClick={() => setIsCodeModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleInsertCode}
                 disabled={!codeSnippet.trim()}
-                className="px-5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 cursor-pointer shadow-md"
+                className="px-4 sm:px-5 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 cursor-pointer shadow-md"
               >
                 Send Code to Nebula AI
               </button>

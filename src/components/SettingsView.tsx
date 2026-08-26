@@ -209,7 +209,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               onClick={handleResetData}
               className="px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/60 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-800 rounded-xl text-xs font-bold transition-colors cursor-pointer"
             >
-              Reset All Demo Data
+              Reset Application Cache
             </button>
             <button
               onClick={() => onNavigate('auth')}

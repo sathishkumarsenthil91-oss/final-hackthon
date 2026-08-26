@@ -163,23 +163,25 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
         nextList = [updatedTrack, ...prev];
       }
       saveUserTracks(user.email || 'default', nextList);
-
-      // Sync learning record to user profile if generated
-      if (updatedTrack.learningRecord && onUpdateUser) {
-        const records = user.learningRecords || [];
-        if (!records.some((r) => r.recordId === updatedTrack.learningRecord?.recordId)) {
-          onUpdateUser({
-            learningRecords: [...records, updatedTrack.learningRecord],
-          });
-        }
-      }
-
       return nextList;
     });
 
-    if (activePlayerTrack && activePlayerTrack.id === updatedTrack.id) {
-      setActivePlayerTrack(updatedTrack);
+    // Sync learning record to user profile safely outside of setYoutubeTracks updater
+    if (updatedTrack.learningRecord && onUpdateUser) {
+      const records = user.learningRecords || [];
+      if (!records.some((r) => r.recordId === updatedTrack.learningRecord?.recordId)) {
+        onUpdateUser({
+          learningRecords: [...records, updatedTrack.learningRecord],
+        });
+      }
     }
+
+    setActivePlayerTrack((curr) => {
+      if (curr && (curr.id === updatedTrack.id || curr.videoId === updatedTrack.videoId)) {
+        return updatedTrack;
+      }
+      return curr;
+    });
   };
 
   const [selectedCourseForPlayer, setSelectedCourseForPlayer] = useState<CourseItem | null>(null);

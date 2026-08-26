@@ -43,22 +43,22 @@ export const AIRecommendationsView: React.FC<AIRecommendationsViewProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 space-y-4 sm:space-y-6">
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-violet-800 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
+      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-violet-800 text-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl relative overflow-hidden">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+          <div className="space-y-1.5 sm:space-y-2">
             <div className="flex items-center gap-2">
-              <span className="px-3 py-0.5 rounded-full text-xs font-black bg-white/20 text-white backdrop-blur-xs flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-black bg-white/20 text-white backdrop-blur-xs flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px] sm:text-[16px]">auto_awesome</span>
                 GEMINI 3.1 PRO POWERED
               </span>
-              <span className="text-xs text-blue-100 font-semibold">Continuous Career Telemetry</span>
+              <span className="text-[11px] sm:text-xs text-blue-100 font-semibold">Continuous Career Telemetry</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight">
               AI Career Recommendations & Growth Sprints
             </h1>
-            <p className="text-blue-100 text-sm max-w-2xl leading-relaxed">
+            <p className="text-blue-100 text-xs sm:text-sm max-w-2xl leading-relaxed">
               Personalized, highest-return career actions derived by evaluating your resume, GitHub commits, skill delta, and verified summer internship openings.
             </p>
           </div>
@@ -66,7 +66,7 @@ export const AIRecommendationsView: React.FC<AIRecommendationsViewProps> = ({
           <button
             onClick={handleRefreshRecommendations}
             disabled={isRefreshing}
-            className="px-5 py-3 bg-white text-blue-800 hover:bg-blue-50 font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            className="px-4 sm:px-5 py-2.5 sm:py-3 bg-white text-blue-800 hover:bg-blue-50 font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shrink-0 self-start md:self-auto"
           >
             <span className={`material-symbols-outlined text-[18px] ${isRefreshing ? 'animate-spin' : ''}`}>
               refresh
@@ -76,26 +76,26 @@ export const AIRecommendationsView: React.FC<AIRecommendationsViewProps> = ({
         </div>
 
         {/* Highlight Score Summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/20">
-          <div className="bg-white/10 backdrop-blur-xs p-3.5 rounded-2xl">
-            <span className="text-[11px] font-bold text-blue-100 uppercase">Top Action ROI</span>
-            <p className="text-2xl font-black mt-0.5">+18%</p>
-            <p className="text-[10px] text-blue-200">Readiness boost potential</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/20">
+          <div className="bg-white/10 backdrop-blur-xs p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl">
+            <span className="text-[10px] sm:text-[11px] font-bold text-blue-100 uppercase">Top Action ROI</span>
+            <p className="text-xl sm:text-2xl font-black mt-0.5">+18%</p>
+            <p className="text-[9px] sm:text-[10px] text-blue-200">Readiness boost potential</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-xs p-3.5 rounded-2xl">
-            <span className="text-[11px] font-bold text-blue-100 uppercase">Target Requisitions</span>
-            <p className="text-2xl font-black mt-0.5">19 Roles</p>
-            <p className="text-[10px] text-emerald-300 font-semibold">90%+ match threshold</p>
+          <div className="bg-white/10 backdrop-blur-xs p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl">
+            <span className="text-[10px] sm:text-[11px] font-bold text-blue-100 uppercase">Target Requisitions</span>
+            <p className="text-xl sm:text-2xl font-black mt-0.5">19 Roles</p>
+            <p className="text-[9px] sm:text-[10px] text-emerald-300 font-semibold">90%+ match threshold</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-xs p-3.5 rounded-2xl">
-            <span className="text-[11px] font-bold text-blue-100 uppercase">Weekly Hours</span>
-            <p className="text-2xl font-black mt-0.5">6-8 hrs</p>
-            <p className="text-[10px] text-blue-200">Recommended study budget</p>
+          <div className="bg-white/10 backdrop-blur-xs p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl">
+            <span className="text-[10px] sm:text-[11px] font-bold text-blue-100 uppercase">Weekly Hours</span>
+            <p className="text-xl sm:text-2xl font-black mt-0.5">6-8 hrs</p>
+            <p className="text-[9px] sm:text-[10px] text-blue-200">Recommended study budget</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-xs p-3.5 rounded-2xl">
-            <span className="text-[11px] font-bold text-blue-100 uppercase">AI Mentor Confidence</span>
-            <p className="text-2xl font-black mt-0.5">99.4%</p>
-            <p className="text-[10px] text-amber-200 font-semibold">High-accuracy prediction</p>
+          <div className="bg-white/10 backdrop-blur-xs p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl">
+            <span className="text-[10px] sm:text-[11px] font-bold text-blue-100 uppercase">AI Mentor Confidence</span>
+            <p className="text-xl sm:text-2xl font-black mt-0.5">99.4%</p>
+            <p className="text-[9px] sm:text-[10px] text-amber-200 font-semibold">High-accuracy prediction</p>
           </div>
         </div>
       </div>

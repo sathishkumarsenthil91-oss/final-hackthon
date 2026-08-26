@@ -22,8 +22,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   
   // Login State
-  const [loginEmail, setLoginEmail] = useState('arun.k@university.edu');
-  const [loginPassword, setLoginPassword] = useState('password123');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
 
   // Register State
@@ -42,7 +42,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-    if (!loginEmail.trim()) {
+    const email = loginEmail.trim().toLowerCase();
+    if (!email) {
       setErrorMessage('Please enter your email address.');
       return;
     }
@@ -54,7 +55,17 @@ export const AuthView: React.FC<AuthViewProps> = ({
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      onLoginSuccess('Arun Kumar', loginEmail);
+      // Retrieve stored user profile if available, or generate dynamic profile from email
+      let savedProfile: any = null;
+      try {
+        const raw = localStorage.getItem(`industryskill_profile_${email}`);
+        if (raw) savedProfile = JSON.parse(raw);
+      } catch (err) {
+        console.error(err);
+      }
+
+      const inferredName = savedProfile?.name || email.split('@')[0].split(/[._-]/).map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+      onLoginSuccess(inferredName, email, savedProfile || undefined);
       onNavigate('dashboard');
     }, 400);
   };
@@ -62,11 +73,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-    if (!regName.trim()) {
+    const name = regName.trim();
+    const email = regEmail.trim().toLowerCase();
+
+    if (!name) {
       setErrorMessage('Please enter your full name.');
       return;
     }
-    if (!regEmail.trim()) {
+    if (!email) {
       setErrorMessage('Please enter a valid university or personal email.');
       return;
     }
@@ -86,10 +100,22 @@ export const AuthView: React.FC<AuthViewProps> = ({
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      onLoginSuccess(regName, regEmail, {
-        college: regCollege || 'National Institute of Technology',
+      const newProfileData: Partial<UserProfile> = {
+        name,
+        email,
+        college: regCollege.trim() || 'University Institute of Technology',
         targetRole: regRole,
-      });
+        degree: 'B.Tech / Bachelor of Science',
+        gradYear: '2026',
+      };
+      
+      try {
+        localStorage.setItem(`industryskill_profile_${email}`, JSON.stringify(newProfileData));
+      } catch (err) {
+        console.error(err);
+      }
+
+      onLoginSuccess(name, email, newProfileData);
       onNavigate('onboarding');
     }, 450);
   };
@@ -98,8 +124,18 @@ export const AuthView: React.FC<AuthViewProps> = ({
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      onLoginSuccess('Arun Kumar', 'arun.k@gmail.com', {
-        college: 'National Institute of Technology',
+      const email = 'user.student@gmail.com';
+      let savedProfile: any = null;
+      try {
+        const raw = localStorage.getItem(`industryskill_profile_${email}`);
+        if (raw) savedProfile = JSON.parse(raw);
+      } catch (err) {
+        console.error(err);
+      }
+
+      const name = savedProfile?.name || 'Verified Student';
+      onLoginSuccess(name, email, savedProfile || {
+        college: 'University Institute of Technology',
         targetRole: 'Full Stack Developer',
       });
       onNavigate('dashboard');
@@ -107,7 +143,11 @@ export const AuthView: React.FC<AuthViewProps> = ({
   };
 
   const handleDemoAccess = () => {
-    onLoginSuccess('Arun Kumar', 'arun.k@university.edu');
+    const email = 'guest.learner@university.edu';
+    onLoginSuccess('Guest Learner', email, {
+      college: 'National Institute of Technology',
+      targetRole: 'Full Stack Developer',
+    });
     onNavigate('dashboard');
   };
 
@@ -308,7 +348,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   type="text"
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
-                  placeholder="e.g. Arun Kumar"
+                  placeholder="e.g. Alex Morgan"
                   required
                   className="w-full bg-slate-50 dark:bg-[#0d1527] border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-[14px] text-slate-900 dark:text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all neu-inset"
                 />
@@ -322,7 +362,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   type="email"
                   value={regEmail}
                   onChange={(e) => setRegEmail(e.target.value)}
-                  placeholder="arun@university.edu"
+                  placeholder="you@university.edu"
                   required
                   className="w-full bg-slate-50 dark:bg-[#0d1527] border border-slate-200 dark:border-slate-700/80 rounded-xl px-3.5 py-2 text-[14px] text-slate-900 dark:text-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all neu-inset"
                 />
@@ -439,16 +479,6 @@ export const AuthView: React.FC<AuthViewProps> = ({
             >
               <GoogleLogo className="w-5 h-5 shrink-0" />
               <span>Continue with Google</span>
-            </button>
-
-            {/* Quick Demo Access */}
-            <button
-              type="button"
-              onClick={handleDemoAccess}
-              className="w-full mt-3 py-2 text-center text-[12px] font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer flex items-center justify-center gap-1"
-            >
-              <span className="material-symbols-outlined text-[16px]">bolt</span>
-              <span>Explore live demo without signing in →</span>
             </button>
           </div>
 

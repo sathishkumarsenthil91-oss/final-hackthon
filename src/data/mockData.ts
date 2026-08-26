@@ -14,7 +14,7 @@ import {
   AppSettings,
 } from '../types';
 
-import nebulaCircleLogo from '../assets/images/nebula_circle_logo_1787745563510.jpg';
+import nebulaCircleLogo from '../assets/images/nebula_ai_logo_1787757789316.jpg';
 
 export const LOGO_URL = 'https://lh3.googleusercontent.com/aida-public/AB6AXuCOSJjLhvz7iUr6FZ1yOOIIaFqO3MPQEeJ7T31b70pIJKjcEgQD8OAhc6xKoZNbiPAvDMl3p6yX-sFLryZdSeFroMvHlZiGnOJUR6zFZDcNZV60j8ZwSyezbmdOt6ObsumvP5CvcdOtoHANoshIIz0TVDSoKaRGAFwiSGeNfoSFvYzW1rPp88uI8Qe667w1B-MeZmKr-gshjM-oqjadgspPi1Wuyb0Ak14jW39G-yb7u-belYC1wQ63';
 export const NEBULA_LOGO_URL = nebulaCircleLogo;
@@ -23,32 +23,61 @@ export const USER_ALT_PHOTO = 'https://lh3.googleusercontent.com/aida-public/AB6
 export const TECHNOVA_LOGO = 'https://lh3.googleusercontent.com/aida-public/AB6AXuBrnBrZnq1nBD-bxxTLoweSKeWrMRnktuM1SNiHF0r_-qLdjgsNqrwpOOc1cz75XBXhtRyCNZarH2kZe3UFFt9rjXK_aEAanFsWzP0jh4QvDOnRiHajPhf8x5bwZEn4bsS5AiWHhccL8sHCpwYu3gtSPioNqmHKzwtkoFipDgozElsK55DKoJ3W_haOWjcUJi4eOrLqTz9QkkvVYgUVYoMyEpwUkEXQfjuHh1EArzrxHNGm6m4HE69t';
 export const GOOGLE_ICON_URL = 'https://lh3.googleusercontent.com/aida-public/AB6AXuC2dB0BZ8vlDNCzrTwCJUGv8kmlsmsf4iwjSMhng-galhSiT1suIZFLtBjFwyRb__3brikcJz7geLCHNI9VKvwsZkdbdcZ3OdAZG7EsI5K7KyoiKcMb6PDuhFow1AkqEItrEixtrpTeVZ0WMKKAcvyBobikuhEqnS1PAffTDp8gtNS016zG0pW_lX3I4NYcedEdBlGbXzJUKyQb1x3MCosVbCEzPBhUIwqYi-aftq67EakD5Tt2cF9s';
 
-export const initialUserProfile: UserProfile = {
-  name: 'Arun Kumar',
-  avatarUrl: USER_ARUN_PHOTO,
-  email: 'arun.k@university.edu',
-  phone: '+1 (555) 234-8901',
-  bio: 'Passionate computer science undergraduate focusing on modern full-stack development, cloud microservices, and AI-driven applications. Eager to solve real-world problems.',
-  college: 'National Institute of Technology',
-  degree: 'B.Tech in Computer Science & Engineering',
-  gradYear: '2026',
-  gpa: '3.85 / 4.00',
-  location: 'San Francisco Bay Area / Hybrid',
-  targetRole: 'Full Stack Developer',
-  githubUrl: 'https://github.com/arunkumar-dev',
-  linkedinUrl: 'https://linkedin.com/in/arun-kumar-dev',
-  portfolioUrl: 'https://arunkumar.dev',
-  resumeFileName: 'Arun_Kumar_Resume_2026.pdf',
-  overallReadiness: 78,
-  matchedSkillsCount: 18,
-  totalTargetSkills: 24,
-  learningProgress: 68,
-  activeCoursesCount: 4,
-  opportunitiesCount: 19,
-  newMatchedCount: 7,
-  completedAssignmentsCount: 12,
-  certificationsCount: 3,
-};
+export const DEFAULT_USER_AVATAR = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80';
+
+export function createAuthenticatedUserProfile(name?: string, email?: string, additional?: Partial<UserProfile>): UserProfile {
+  const cleanEmail = (email || '').trim();
+  const rawName = (name || '').trim();
+  
+  // Format fallback display name nicely if only email is provided
+  let displayName = rawName;
+  if (!displayName && cleanEmail) {
+    const handle = cleanEmail.split('@')[0];
+    displayName = handle
+      .split(/[._-]/)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+  if (!displayName) {
+    displayName = 'Student Developer';
+  }
+
+  const slug = displayName.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  return {
+    name: displayName,
+    avatarUrl: additional?.avatarUrl || DEFAULT_USER_AVATAR,
+    email: cleanEmail || 'student@university.edu',
+    phone: additional?.phone || '',
+    bio: additional?.bio || `Undergraduate developer specializing in modern full-stack development, cloud architecture, and AI-driven applications.`,
+    college: additional?.college || 'National Institute of Technology',
+    degree: additional?.degree || 'B.Tech in Computer Science & Engineering',
+    gradYear: additional?.gradYear || '2026',
+    gpa: additional?.gpa || '3.80 / 4.00',
+    location: additional?.location || 'San Francisco Bay Area / Remote',
+    targetRole: additional?.targetRole || 'Full Stack Developer',
+    githubUrl: additional?.githubUrl || `https://github.com/${slug || 'developer'}`,
+    linkedinUrl: additional?.linkedinUrl || `https://linkedin.com/in/${slug || 'developer'}`,
+    portfolioUrl: additional?.portfolioUrl || `https://${slug || 'developer'}.dev`,
+    resumeFileName: additional?.resumeFileName || `${displayName.replace(/\s+/g, '_')}_Resume_2026.pdf`,
+    overallReadiness: additional?.overallReadiness ?? 78,
+    matchedSkillsCount: additional?.matchedSkillsCount ?? 18,
+    totalTargetSkills: additional?.totalTargetSkills ?? 24,
+    learningProgress: additional?.learningProgress ?? 68,
+    activeCoursesCount: additional?.activeCoursesCount ?? 4,
+    opportunitiesCount: additional?.opportunitiesCount ?? 19,
+    newMatchedCount: additional?.newMatchedCount ?? 7,
+    completedAssignmentsCount: additional?.completedAssignmentsCount ?? 12,
+    certificationsCount: additional?.certificationsCount ?? 3,
+    earnedCertificates: additional?.earnedCertificates || [],
+    projects: additional?.projects || [],
+    internships: additional?.internships || [],
+    achievements: additional?.achievements || [],
+    isPrivateAccount: additional?.isPrivateAccount ?? false,
+  };
+}
+
+export const initialUserProfile: UserProfile = createAuthenticatedUserProfile('Student Developer', 'student@university.edu');
 
 export const initialSkills: SkillItem[] = [
   { id: 's1', name: 'HTML5 & Semantic Web', proficiency: 98, category: 'foundation', experience: '3 yrs', verified: true },
@@ -811,22 +840,7 @@ export const initialWebinars: WebinarItem[] = [
     zoomMeetingId: '712 9038 4192',
     zoomPasscode: 'K8SREPLAY',
     certificateEligible: true,
-    hasClaimedCertificate: true,
-    claimedCertificate: {
-      certificateId: 'IS-WEB-2026-K8S91',
-      webinarId: 'web-3',
-      webinarTitle: 'Zero to Docker & Kubernetes: Hands-On Dev to Deploy',
-      recipientName: 'Sathish S',
-      recipientEmail: 'sathishss9366@gmail.com',
-      speakerName: 'Rohan Mehta',
-      speakerRole: 'DevOps Principal',
-      speakerCompany: 'CloudNative Scale',
-      issueDate: 'Feb 20, 2026',
-      duration: '90 mins',
-      tags: ['DevOps', 'Docker', 'Kubernetes'],
-      issuer: 'IndustrySkill Global Tech Summit & CNCF Academic Partner',
-      verificationUrl: 'https://industryskill.edu/verify/IS-WEB-2026-K8S91',
-    },
+    hasClaimedCertificate: false,
     keyTakeaways: [
       'Writing secure, tiny Docker multi-stage images under 60MB',
       'Configuring Kubernetes services, cluster IP and ingress routes',
@@ -911,7 +925,7 @@ export const initialAssignments: AssignmentItem[] = [
     maxScore: 100,
     skillsTested: ['React 19', 'Gemini SDK', 'Streaming Responses', 'Markdown Rendering'],
     description: 'Build a conversational AI interface with streaming responses, conversation history memory, and code block formatting.',
-    deliverables: ['GitHub Repository', 'Live Demo URL'],
+    deliverables: ['GitHub Repository', 'Live Application URL'],
     feedback: 'Excellent implementation of streaming chunks and token safety. Great responsive UI layout!',
   },
   {
@@ -1132,7 +1146,7 @@ We never charge any application or equipment fees. All applications must be subm
     url: 'https://wa.me/task-reward-club-vip',
     content: `Hi! I am Emma from Global Talent HR. We saw your resume on a public job board.
 We offer a daily part-time role reviewing hotel apps. You can earn $150-$300 every 2 hours from your phone.
-To unlock your VIP task account, deposit $50 into the demo commission wallet. Start immediately!`,
+To unlock your VIP task account, deposit $50 into the advance commission wallet. Start immediately!`,
   },
 ];
 

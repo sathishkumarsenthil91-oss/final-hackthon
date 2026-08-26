@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, SkillItem, ViewType } from '../types';
+import { NEBULA_LOGO_URL } from '../data/mockData';
 
 interface SmartCopilotDrawerProps {
   isOpen: boolean;
@@ -106,8 +107,13 @@ export const SmartCopilotDrawer: React.FC<SmartCopilotDrawerProps> = ({
         {/* Header */}
         <div className="p-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-xl">
-              ✨
+            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center overflow-hidden border border-white/30 shadow-xs">
+              <img
+                src={NEBULA_LOGO_URL}
+                alt="AI Copilot"
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
             </div>
             <div>
               <h2 className="text-lg font-black tracking-tight">

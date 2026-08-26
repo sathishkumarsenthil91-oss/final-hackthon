@@ -18,7 +18,7 @@ export const CertificateGenerationModal: React.FC<CertificateGenerationModalProp
   onCertificateClaimed,
   onShareToNetwork,
 }) => {
-  const [recipientName, setRecipientName] = useState<string>(user.name || 'Arun Kumar');
+  const [recipientName, setRecipientName] = useState<string>(user.name || (user.email ? user.email.split('@')[0] : 'Student Developer'));
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);

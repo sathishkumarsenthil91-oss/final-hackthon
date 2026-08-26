@@ -14,7 +14,7 @@ export const WebinarCertificateModal: React.FC<WebinarCertificateModalProps> = (
   onClose,
   onCertificateClaimed,
 }) => {
-  const [recipientName, setRecipientName] = useState<string>(user.name || 'Sathish S');
+  const [recipientName, setRecipientName] = useState<string>(user.name || (user.email ? user.email.split('@')[0] : 'Student Developer'));
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);

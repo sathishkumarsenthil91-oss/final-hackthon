@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile, ViewType, SkillItem, UnofficialLearningRecord } from '../types';
 import { UnofficialRecordModal } from './UnofficialRecordModal';
 import { downloadRecordAsPDF } from '../services/youtubeLearningService';
+import { DEFAULT_USER_AVATAR } from '../data/mockData';
 
 interface ProfileViewProps {
   user: UserProfile;
@@ -22,6 +23,104 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [activeTab, setActiveTab] = useState<'overview' | 'resume' | 'achievements' | 'records'>('overview');
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
 
+  // Profile photo upload states
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
+  const [photoSuccess, setPhotoSuccess] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  // Sync formData with user whenever edit modal opens
+  useEffect(() => {
+    if (isEditing) {
+      setFormData(user);
+      setPhotoSuccess(null);
+      setPhotoError(null);
+    }
+  }, [isEditing, user]);
+
+  const processImageFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setPhotoError('Please select a valid image file (JPG, PNG, WebP, GIF)');
+      setPhotoSuccess(null);
+      return;
+    }
+    setPhotoError(null);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 400;
+        const MAX_HEIGHT = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setFormData((prev) => ({ ...prev, avatarUrl: compressedDataUrl }));
+          setPhotoSuccess('New photo selected. Click "Save Changes" to apply.');
+        }
+      };
+      img.onerror = () => {
+        setPhotoError('Failed to process the image. Please choose another photo.');
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => {
+      setPhotoError('Could not read the selected file.');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processImageFile(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingPhoto(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingPhoto(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingPhoto(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processImageFile(file);
+    }
+  };
+
+  const handleResetAvatar = () => {
+    setFormData((prev) => ({ ...prev, avatarUrl: DEFAULT_USER_AVATAR }));
+    setPhotoSuccess('Reset to default avatar. Click "Save Changes" to apply.');
+    setPhotoError(null);
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateProfile(formData);
@@ -40,12 +139,23 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            <div className="relative">
+            <div className="relative group">
               <img
                 src={user.avatarUrl}
                 alt={user.name}
                 className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-4 border-white/30 shadow-xl"
               />
+              <button
+                onClick={() => {
+                  setIsEditing(true);
+                  setTimeout(() => fileInputRef.current?.click(), 100);
+                }}
+                className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity cursor-pointer text-[11px] font-bold gap-1 backdrop-blur-xs"
+                title="Change Profile Photo"
+              >
+                <span className="material-symbols-outlined text-[20px]">photo_camera</span>
+                <span>Change</span>
+              </button>
               <span className="absolute -bottom-1 -right-1 bg-emerald-500 border-2 border-white dark:border-slate-900 w-5 h-5 rounded-full" title="Active Student" />
             </div>
             <div className="space-y-1.5">
@@ -210,39 +320,45 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <a
-                  href={user.githubUrl || 'https://github.com'}
+                  href={user.githubUrl || `https://github.com/${(user.name || 'developer').toLowerCase().replace(/\s+/g, '')}`}
                   target="_blank"
                   rel="noreferrer"
                   className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-blue-500 transition-all flex items-center gap-3"
                 >
                   <span className="material-symbols-outlined text-2xl text-slate-700 dark:text-slate-200">code_blocks</span>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-slate-400 font-bold">GitHub</p>
-                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 truncate">github.com/arunkumar</p>
+                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 truncate">
+                      {user.githubUrl ? user.githubUrl.replace(/^https?:\/\//, '') : `github.com/${(user.name || 'developer').toLowerCase().replace(/\s+/g, '')}`}
+                    </p>
                   </div>
                 </a>
                 <a
-                  href={user.linkedinUrl || 'https://linkedin.com'}
+                  href={user.linkedinUrl || `https://linkedin.com/in/${(user.name || 'developer').toLowerCase().replace(/\s+/g, '')}`}
                   target="_blank"
                   rel="noreferrer"
                   className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-blue-500 transition-all flex items-center gap-3"
                 >
                   <span className="material-symbols-outlined text-2xl text-blue-600">work</span>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-slate-400 font-bold">LinkedIn</p>
-                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 truncate">linkedin.com/in/arun</p>
+                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 truncate">
+                      {user.linkedinUrl ? user.linkedinUrl.replace(/^https?:\/\//, '') : `linkedin.com/in/${(user.name || 'developer').toLowerCase().replace(/\s+/g, '')}`}
+                    </p>
                   </div>
                 </a>
                 <a
-                  href={user.portfolioUrl || 'https://arunkumar.dev'}
+                  href={user.portfolioUrl || `https://${(user.name || 'developer').toLowerCase().replace(/\s+/g, '')}.dev`}
                   target="_blank"
                   rel="noreferrer"
                   className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-blue-500 transition-all flex items-center gap-3"
                 >
                   <span className="material-symbols-outlined text-2xl text-emerald-600">language</span>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-slate-400 font-bold">Portfolio</p>
-                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 truncate">arunkumar.dev</p>
+                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 truncate">
+                      {user.portfolioUrl ? user.portfolioUrl.replace(/^https?:\/\//, '') : `${(user.name || 'developer').toLowerCase().replace(/\s+/g, '')}.dev`}
+                    </p>
                   </div>
                 </a>
               </div>
@@ -303,7 +419,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">Active Master Resume</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">File: {user.resumeFileName || 'Arun_Kumar_Resume_2026.pdf'}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">File: {user.resumeFileName || `${(user.name || 'User').replace(/\s+/g, '_')}_Resume_2026.pdf`}</p>
               </div>
               <div className="flex items-center gap-3">
                 <button
@@ -568,6 +684,95 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
 
             <form onSubmit={handleSave} className="space-y-4 text-xs font-medium">
+              {/* Profile Photo Uploader Section */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-slate-700 dark:text-slate-200 font-bold text-xs">
+                    Profile Photo
+                  </label>
+                  <span className="text-[11px] text-slate-400">
+                    Supports JPG, PNG, WebP (Mobile & Desktop Gallery)
+                  </span>
+                </div>
+
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`flex flex-col sm:flex-row items-center gap-4 p-3.5 rounded-xl border-2 transition-all ${
+                    isDraggingPhoto
+                      ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/30'
+                      : 'border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/50'
+                  }`}
+                >
+                  {/* Photo Preview */}
+                  <div className="relative shrink-0">
+                    <img
+                      src={formData.avatarUrl || DEFAULT_USER_AVATAR}
+                      alt="Profile Preview"
+                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-blue-500/40 shadow-md"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="absolute -bottom-1.5 -right-1.5 p-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer transition-transform hover:scale-105"
+                      title="Upload from Device"
+                    >
+                      <span className="material-symbols-outlined text-[16px] block">photo_camera</span>
+                    </button>
+                  </div>
+
+                  {/* Actions & Drop info */}
+                  <div className="flex-1 space-y-2 text-center sm:text-left">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">upload</span>
+                        Upload from Gallery
+                      </button>
+
+                      {formData.avatarUrl !== DEFAULT_USER_AVATAR && (
+                        <button
+                          type="button"
+                          onClick={handleResetAvatar}
+                          className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
+                        >
+                          Reset to Default
+                        </button>
+                      )}
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Drag & drop an image here or click upload to select from your device gallery.
+                    </p>
+
+                    {photoSuccess && (
+                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center sm:justify-start gap-1">
+                        <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                        {photoSuccess}
+                      </p>
+                    )}
+
+                    {photoError && (
+                      <p className="text-[11px] text-red-600 dark:text-red-400 font-bold flex items-center justify-center sm:justify-start gap-1">
+                        <span className="material-symbols-outlined text-[14px]">error</span>
+                        {photoError}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">Full Name</label>

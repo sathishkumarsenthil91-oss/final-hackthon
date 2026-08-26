@@ -5,30 +5,13 @@ import { WebinarCertificateModal } from './WebinarCertificateModal';
 import { CertificateGenerationModal } from './CertificateGenerationModal';
 
 interface WebinarsViewProps {
-  user?: UserProfile;
+  user: UserProfile;
   onNavigate: (view: ViewType) => void;
   onUpdateUser?: (updated: Partial<UserProfile>) => void;
 }
 
 export const WebinarsView: React.FC<WebinarsViewProps> = ({
-  user = {
-    name: 'Sathish S',
-    avatarUrl: '',
-    email: 'sathishss9366@gmail.com',
-    college: 'University',
-    degree: 'B.Tech / BS Computer Science',
-    gradYear: '2026',
-    targetRole: 'Full Stack Developer',
-    overallReadiness: 72,
-    matchedSkillsCount: 18,
-    totalTargetSkills: 24,
-    learningProgress: 65,
-    activeCoursesCount: 4,
-    opportunitiesCount: 19,
-    newMatchedCount: 7,
-    learningRecords: [],
-    earnedCertificates: [],
-  },
+  user,
   onNavigate,
   onUpdateUser,
 }) => {

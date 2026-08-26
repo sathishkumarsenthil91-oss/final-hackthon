@@ -26,9 +26,30 @@ import { LoginModal } from './components/LoginModal';
 import { SmartCopilotDrawer } from './components/SmartCopilotDrawer';
 
 export default function App() {
-  // Starting page is Auth view with Login and Register forms
-  const [currentView, setCurrentView] = useState<ViewType>('auth');
-  const [user, setUser] = useState<UserProfile>(initialUserProfile);
+  // Check for existing saved session
+  const [user, setUser] = useState<UserProfile>(() => {
+    try {
+      const saved = localStorage.getItem('industryskill_auth_user');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    return initialUserProfile;
+  });
+
+  // Starting page is Auth view with Login and Register forms if no session exists, else dashboard
+  const [currentView, setCurrentView] = useState<ViewType>(() => {
+    try {
+      const saved = localStorage.getItem('industryskill_auth_user');
+      if (saved) return 'dashboard';
+    } catch (err) {
+      console.error(err);
+    }
+    return 'auth';
+  });
+
   const [skills, setSkills] = useState<SkillItem[]>(initialSkills);
   const [roadmapNodes, setRoadmapNodes] = useState<RoadmapNode[]>(initialRoadmapNodes);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -63,19 +84,56 @@ export default function App() {
   };
 
   const handleUpdateProfile = (updated: Partial<UserProfile>) => {
-    setUser((prev) => ({ ...prev, ...updated }));
+    setUser((prev) => {
+      const nextUser = { ...prev, ...updated };
+      try {
+        localStorage.setItem('industryskill_auth_user', JSON.stringify(nextUser));
+        if (nextUser.email) {
+          localStorage.setItem(`industryskill_profile_${nextUser.email.toLowerCase()}`, JSON.stringify(nextUser));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      return nextUser;
+    });
   };
 
   const handleLoginSuccess = (name: string, email: string, additionalData?: Partial<UserProfile>) => {
-    setUser((prev) => ({
-      ...prev,
-      name,
-      email,
+    const cleanEmail = (email || '').trim().toLowerCase();
+    let existingProfile: Partial<UserProfile> = {};
+    try {
+      const raw = localStorage.getItem(`industryskill_profile_${cleanEmail}`);
+      if (raw) existingProfile = JSON.parse(raw);
+    } catch (err) {
+      console.error(err);
+    }
+
+    const nextUser: UserProfile = {
+      ...user,
+      ...existingProfile,
+      name: name || existingProfile.name || (cleanEmail ? cleanEmail.split('@')[0] : 'Student Developer'),
+      email: cleanEmail || 'student@university.edu',
       ...(additionalData || {}),
-    }));
+    };
+
+    try {
+      localStorage.setItem('industryskill_auth_user', JSON.stringify(nextUser));
+      if (cleanEmail) {
+        localStorage.setItem(`industryskill_profile_${cleanEmail}`, JSON.stringify(nextUser));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
+    setUser(nextUser);
   };
 
   const handleSignOut = () => {
+    try {
+      localStorage.removeItem('industryskill_auth_user');
+    } catch (err) {
+      console.error(err);
+    }
     setCurrentView('auth');
   };
 
@@ -282,6 +340,7 @@ export default function App() {
         {/* Onboarding Wizard */}
         {currentView === 'onboarding' && (
           <OnboardingWizard
+            user={user}
             onComplete={handleUpdateProfile}
             onNavigate={handleNavigate}
           />
@@ -289,16 +348,18 @@ export default function App() {
       </div>
 
       {/* Floating Action Buttons */}
-      <div className="fixed bottom-20 md:bottom-8 right-5 z-40 flex flex-col gap-3">
-        {/* Floating Copilot Button */}
-        <button
-          onClick={() => setIsCopilotOpen(true)}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-3.5 rounded-full shadow-2xl hover:scale-110 transition-transform cursor-pointer flex items-center justify-center border-2 border-white dark:border-slate-800"
-          title="Open AI Job Copilot & Resume ATS Scanner"
-        >
-          <span className="material-symbols-outlined text-[22px]">auto_fix_high</span>
-        </button>
-      </div>
+      {currentView !== 'nebula' && (
+        <div className="fixed bottom-20 md:bottom-8 right-5 z-40 flex flex-col gap-3">
+          {/* Floating Copilot Button */}
+          <button
+            onClick={() => setIsCopilotOpen(true)}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white p-3.5 rounded-full shadow-2xl hover:scale-110 transition-transform cursor-pointer flex items-center justify-center border-2 border-white dark:border-slate-800"
+            title="Open AI Job Copilot & Resume ATS Scanner"
+          >
+            <span className="material-symbols-outlined text-[22px]">auto_fix_high</span>
+          </button>
+        </div>
+      )}
 
       {/* Smart Copilot Drawer (Best Feature) */}
       <SmartCopilotDrawer

@@ -19,8 +19,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [tab, setTab] = useState<'login' | 'register'>('login');
   
   // Login fields
-  const [loginEmail, setLoginEmail] = useState('arun.k@university.edu');
-  const [loginPassword, setLoginPassword] = useState('••••••••');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   
   // Register fields
   const [regName, setRegName] = useState('');
@@ -33,23 +33,64 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onLoginSuccess('Arun Kumar', loginEmail);
+    const email = loginEmail.trim().toLowerCase();
+    if (!email) return;
+
+    let savedProfile: any = null;
+    try {
+      const raw = localStorage.getItem(`industryskill_profile_${email}`);
+      if (raw) savedProfile = JSON.parse(raw);
+    } catch (err) {
+      console.error(err);
+    }
+
+    const inferredName = savedProfile?.name || email.split('@')[0].split(/[._-]/).map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+    onLoginSuccess(inferredName, email, savedProfile || undefined);
     onClose();
     onNavigate('dashboard');
   };
 
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onLoginSuccess(regName || 'New Student', regEmail || 'student@university.edu', {
-      college: regCollege || 'National Institute of Technology',
+    const name = regName.trim();
+    const email = regEmail.trim().toLowerCase();
+    if (!name || !email) return;
+
+    const newProfileData: Partial<UserProfile> = {
+      name,
+      email,
+      college: regCollege.trim() || 'University Institute of Technology',
       targetRole: regRole,
-    });
+      degree: 'B.Tech / Bachelor of Science',
+      gradYear: '2026',
+    };
+
+    try {
+      localStorage.setItem(`industryskill_profile_${email}`, JSON.stringify(newProfileData));
+    } catch (err) {
+      console.error(err);
+    }
+
+    onLoginSuccess(name, email, newProfileData);
     onClose();
     onNavigate('onboarding');
   };
 
   const handleGoogleSignIn = () => {
-    onLoginSuccess('Arun Kumar', 'arun.k@gmail.com');
+    const email = 'user.student@gmail.com';
+    let savedProfile: any = null;
+    try {
+      const raw = localStorage.getItem(`industryskill_profile_${email}`);
+      if (raw) savedProfile = JSON.parse(raw);
+    } catch (err) {
+      console.error(err);
+    }
+
+    const name = savedProfile?.name || 'Verified Student';
+    onLoginSuccess(name, email, savedProfile || {
+      college: 'University Institute of Technology',
+      targetRole: 'Full Stack Developer',
+    });
     onClose();
     onNavigate('dashboard');
   };
@@ -157,7 +198,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               </label>
               <input
                 type="text"
-                placeholder="e.g. Arun Kumar"
+                placeholder="e.g. Alex Morgan"
                 value={regName}
                 onChange={(e) => setRegName(e.target.value)}
                 required
