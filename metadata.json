@@ -1,0 +1,6 @@
+{
+  "name": "IndustrySkill - AI Career Readiness",
+  "description": "AI-powered career readiness platform with personalized skill gap roadmaps, verified opportunities, opportunity scam safety scanner, and Nebula AI high-thinking career advisor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
