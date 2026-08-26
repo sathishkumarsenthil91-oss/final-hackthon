@@ -49,6 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'certifications', label: 'Certifications', icon: 'military_tech', badge: '50% Off', desc: 'Google Cloud & AWS roadmaps', category: 'Learning' },
     { id: 'assignments', label: 'Assignments', icon: 'task', desc: 'Code repos & AI rubrics', category: 'Learning' },
     { id: 'opportunities', label: 'Internships & Jobs', icon: 'work', badge: '19 New', desc: 'Verified openings', category: 'Career' },
+    { id: 'network', label: 'Professional Network', icon: 'hub', badge: 'Social', desc: 'Creator feed, DMs & certificates', category: 'Career' },
     { id: 'webinars', label: 'Webinars', icon: 'event', badge: 'Live Talks', desc: 'Tech AMAs & masterclasses', category: 'Career' },
     { id: 'safety', label: 'Fraud Detection', icon: 'security', badge: 'Shield', desc: 'Scam job & fee scanner', category: 'Career' },
     { id: 'settings', label: 'Settings', icon: 'settings', desc: 'Preferences & theme', category: 'System' },
@@ -77,7 +78,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
               title="Browse all 14 Platform Sections"
             >
               <span className="material-symbols-outlined text-[18px]">apps</span>
@@ -89,67 +90,79 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Mega Menu Dropdown */}
             {isMenuOpen && (
-              <div className="absolute left-0 mt-2 w-80 sm:w-[480px] bg-white dark:bg-[#11192e] rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-4 z-50 animate-fade-in max-h-[80vh] overflow-y-auto">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-3 px-2">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[20px]">
-                      grid_view
-                    </span>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                      All 14 Platform Sections
-                    </h3>
-                  </div>
-                  <span className="text-[11px] text-slate-400 font-semibold">1-Click Jump</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {allSections.map((sec) => (
+              <>
+                {/* Mobile Backdrop */}
+                <div
+                  className="fixed inset-0 bg-black/40 backdrop-blur-xs sm:hidden z-40"
+                  onClick={() => setIsMenuOpen(false)}
+                />
+                <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-auto sm:left-0 sm:top-full sm:mt-2 w-auto sm:w-[480px] max-w-[calc(100vw-1.5rem)] bg-white dark:bg-[#11192e] rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-3 sm:p-4 z-50 animate-in fade-in max-h-[82vh] overflow-y-auto">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-3 px-2">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[20px]">
+                        grid_view
+                      </span>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                        All 14 Platform Sections
+                      </h3>
+                    </div>
                     <button
-                      key={sec.id}
-                      onClick={() => {
-                        onNavigate(sec.id);
-                        setIsMenuOpen(false);
-                      }}
-                      className={`flex items-start gap-3 p-2.5 rounded-2xl text-left transition-all cursor-pointer ${
-                        currentView === sec.id
-                          ? 'bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-transparent'
-                      }`}
+                      onClick={() => setIsMenuOpen(false)}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                     >
-                      <div
-                        className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                      <span className="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {allSections.map((sec) => (
+                      <button
+                        key={sec.id}
+                        onClick={() => {
+                          onNavigate(sec.id);
+                          setIsMenuOpen(false);
+                        }}
+                        className={`flex items-start gap-3 p-2.5 rounded-2xl text-left transition-all cursor-pointer ${
                           currentView === sec.id
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                            ? 'bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800'
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-transparent'
                         }`}
                       >
-                        <span className="material-symbols-outlined text-[18px]">
-                          {sec.icon}
-                        </span>
-                      </div>
-                      <div className="flex-1 truncate">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`text-xs font-bold truncate ${
-                              currentView === sec.id
-                                ? 'text-blue-600 dark:text-blue-400'
-                                : 'text-slate-900 dark:text-white'
-                            }`}
-                          >
-                            {sec.label}
+                        <div
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                            currentView === sec.id
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            {sec.icon}
                           </span>
-                          {sec.badge && (
-                            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
-                              {sec.badge}
-                            </span>
-                          )}
                         </div>
-                        <p className="text-[11px] text-slate-400 truncate">{sec.desc}</p>
-                      </div>
-                    </button>
-                  ))}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`text-xs font-bold truncate ${
+                                currentView === sec.id
+                                  ? 'text-blue-600 dark:text-blue-400'
+                                  : 'text-slate-900 dark:text-white'
+                              }`}
+                            >
+                              {sec.label}
+                            </span>
+                            {sec.badge && (
+                              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 shrink-0">
+                                {sec.badge}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-400 truncate">{sec.desc}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>

@@ -10,6 +10,7 @@ export type ViewType =
   | 'industry-tools'
   | 'certifications'
   | 'opportunities'
+  | 'network'
   | 'webinars'
   | 'nebula'
   | 'assignments'
@@ -17,14 +18,116 @@ export type ViewType =
   | 'settings'
   | 'onboarding'
   | 'login'
-  | 'register';
+  | 'register'
+  | 'roadmap';
+
+export interface UserProject {
+  id: string;
+  title: string;
+  description: string;
+  tags: string[];
+  githubUrl?: string;
+  demoUrl?: string;
+  date: string;
+  stars?: number;
+}
+
+export interface UserInternship {
+  id: string;
+  role: string;
+  company: string;
+  period: string;
+  location: string;
+  description: string;
+  verified: boolean;
+}
+
+export interface UserAchievement {
+  id: string;
+  title: string;
+  issuer: string;
+  date: string;
+  badge: string;
+  description?: string;
+}
+
+export interface GeneratedCertificate {
+  id: string;
+  serialId: string;
+  type: 'course' | 'webinar' | 'youtube_track' | 'specialization';
+  itemId: string;
+  title: string;
+  recipientName: string;
+  recipientEmail?: string;
+  instructorOrSpeaker: string;
+  instructorRole?: string;
+  organization: string;
+  issueDate: string;
+  durationFormatted: string;
+  completionPercentage: number;
+  watchTimeSeconds: number;
+  requiredWatchTimeSeconds: number;
+  watchTimeFormatted?: string;
+  skillsValidated: string[];
+  legalDisclaimer: string;
+  verificationUrl: string;
+  verificationBadge?: string;
+}
+
+export interface YouTubeLearningTrack {
+  id: string;
+  userId: string;
+  videoId: string;
+  videoUrl: string;
+  title: string;
+  channel: string;
+  channelUrl?: string;
+  thumbnail: string;
+  durationSeconds: number;
+  durationFormatted: string;
+  verifiedWatchedSeconds: number; // strictly verified real watched seconds without skips
+  currentTime: number; // exact saved resume position in seconds
+  completionPercentage: number; // (verifiedWatchedSeconds / durationSeconds) * 100
+  status: 'in_progress' | 'completed';
+  lastWatched: string; // ISO string
+  dateAdded: string; // ISO string
+  watchedRanges: [number, number][]; // list of verified [startSec, endSec] intervals
+  aiSummary?: {
+    summary: string;
+    keyPoints: string[];
+    timestamps?: { time: string; title: string; note: string }[];
+    generatedAt: string;
+    modelUsed?: string;
+    skillsValidated?: string[];
+  };
+  notes?: string;
+  learningRecord?: UnofficialLearningRecord;
+}
+
+export interface UnofficialLearningRecord {
+  recordId: string; // e.g. "IS-REC-YTL-2026-X7K9P"
+  userId: string;
+  userName: string;
+  videoTitle: string;
+  channel: string;
+  videoId: string;
+  videoUrl: string;
+  verifiedWatchSeconds: number;
+  verifiedWatchFormatted: string;
+  completionPercentage: number;
+  completionDate: string;
+  disclaimer: string;
+  skillsValidated?: string[];
+}
 
 export interface UserProfile {
+  id?: string;
   name: string;
   avatarUrl: string;
   email: string;
   phone?: string;
   bio?: string;
+  headline?: string;
   college: string;
   degree: string;
   gradYear: string;
@@ -44,6 +147,147 @@ export interface UserProfile {
   newMatchedCount: number; // e.g. 6
   completedAssignmentsCount?: number;
   certificationsCount?: number;
+  learningRecords?: UnofficialLearningRecord[];
+  earnedCertificates?: GeneratedCertificate[];
+  projects?: UserProject[];
+  internships?: UserInternship[];
+  achievements?: UserAchievement[];
+  isPrivateAccount?: boolean;
+  followersCount?: number;
+  followingCount?: number;
+}
+
+export interface UserLibraryItem {
+  id: string;
+  type: 'youtube_track' | 'course' | 'cert_prep' | 'lab';
+  title: string;
+  providerOrChannel: string;
+  thumbnailUrl?: string;
+  progressPercentage: number;
+  currentLessonOrChapter: string;
+  totalDurationOrModules: string;
+  skillsCovered: string[];
+  lastStudiedAt: string;
+  isCompleted?: boolean;
+  notesCount?: number;
+  certificateSerial?: string;
+}
+
+export interface LibraryAccessRequest {
+  id: string;
+  requesterId: string;
+  requesterName: string;
+  requesterAvatar: string;
+  requesterHeadline: string;
+  targetUserId: string;
+  requestedAt: string;
+  status: 'pending' | 'approved' | 'declined';
+}
+
+export interface NetworkUser {
+  id: string;
+  name: string;
+  headline: string;
+  avatarUrl: string;
+  coverUrl?: string;
+  company: string;
+  role: string;
+  location: string;
+  bio: string;
+  followersCount: number;
+  followingCount: number;
+  isFollowing: boolean;
+  isFollowRequested?: boolean;
+  isPrivate: boolean;
+  isLibraryPrivate?: boolean;
+  hasAccessToLibrary?: boolean;
+  isAccessRequested?: boolean;
+  isAlumni?: boolean;
+  isRecruiter?: boolean;
+  isMentor?: boolean;
+  mutualCount?: number;
+  skills: string[];
+  certificates: GeneratedCertificate[];
+  libraryItems?: UserLibraryItem[];
+  projects: UserProject[];
+  internships: UserInternship[];
+  achievements: UserAchievement[];
+  onlineStatus: 'online' | 'idle' | 'offline';
+  currentlyStudyingStory?: {
+    topic: string;
+    courseTitle: string;
+    progress: number;
+    updatedAt: string;
+  };
+}
+
+export interface NetworkComment {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  authorHeadline: string;
+  timestamp: string;
+  content: string;
+  likesCount: number;
+  isLiked?: boolean;
+}
+
+export interface NetworkPost {
+  id: string;
+  author: {
+    id: string;
+    name: string;
+    avatarUrl: string;
+    headline: string;
+    company: string;
+    isCurrentUser?: boolean;
+  };
+  timestamp: string;
+  content: string;
+  tags: string[];
+  skills: string[];
+  likesCount: number;
+  isLiked?: boolean;
+  commentsCount: number;
+  repostsCount: number;
+  isReposted?: boolean;
+  imageUrl?: string;
+  codeSnippet?: { language: string; code: string };
+  poll?: {
+    question: string;
+    options: { id: string; text: string; votes: number }[];
+    userVotedOptionId?: string;
+    totalVotes: number;
+  };
+  attachedCertificate?: GeneratedCertificate;
+  attachedProject?: UserProject;
+  comments: NetworkComment[];
+}
+
+export interface NetworkMessage {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  timestamp: string;
+  isRead: boolean;
+}
+
+export interface NetworkConversation {
+  id: string;
+  participant: NetworkUser;
+  lastMessage: string;
+  lastMessageTime: string;
+  unreadCount: number;
+  messages: NetworkMessage[];
+}
+
+export interface FollowRequest {
+  id: string;
+  requester: NetworkUser;
+  timestamp: string;
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 export interface SkillItem {
@@ -80,6 +324,25 @@ export interface AIRecommendation {
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
 }
 
+export interface CourseLesson {
+  id: string;
+  title: string;
+  duration: string;
+  type: 'video' | 'lab' | 'quiz' | 'reading';
+  completed: boolean;
+  videoUrl?: string;
+  videoId?: string;
+  summary?: string;
+  codeSnippet?: string;
+}
+
+export interface CourseModule {
+  id: string;
+  title: string;
+  duration: string;
+  lessons: CourseLesson[];
+}
+
 export interface CourseItem {
   id: string;
   title: string;
@@ -93,13 +356,16 @@ export interface CourseItem {
   progress: number; // 0 - 100
   isEnrolled: boolean;
   coverImage?: string;
+  thumbnail?: string;
   skillsTaught: string[];
   description: string;
   instructor: {
     name: string;
     role: string;
     avatar: string;
+    company?: string;
   };
+  modules?: CourseModule[];
 }
 
 export interface IndustryTool {
@@ -131,6 +397,22 @@ export interface CertificationItem {
   prepProgress?: number;
 }
 
+export interface WebinarCertificate {
+  certificateId: string;
+  webinarId: string;
+  webinarTitle: string;
+  recipientName: string;
+  recipientEmail?: string;
+  speakerName: string;
+  speakerRole: string;
+  speakerCompany: string;
+  issueDate: string;
+  duration: string;
+  tags: string[];
+  issuer: string;
+  verificationUrl: string;
+}
+
 export interface WebinarItem {
   id: string;
   title: string;
@@ -145,8 +427,28 @@ export interface WebinarItem {
   tags: string[];
   status: 'Upcoming' | 'Live' | 'Recorded';
   registered: boolean;
+  isRegistered?: boolean;
   attendeesCount: number;
+  likesCount?: number;
+  isLiked?: boolean;
+  youtubeUrl?: string;
+  youtubeVideoId?: string;
+  zoomMeetingUrl?: string;
+  zoomMeetingId?: string;
+  zoomPasscode?: string;
   keyTakeaways: string[];
+  category?: string;
+  description?: string;
+  thumbnail?: string;
+  date?: string;
+  time?: string;
+  speakerName?: string;
+  speakerRole?: string;
+  speakerCompany?: string;
+  speakerAvatar?: string;
+  certificateEligible?: boolean;
+  hasClaimedCertificate?: boolean;
+  claimedCertificate?: WebinarCertificate;
 }
 
 export interface AssignmentItem {
@@ -218,6 +520,10 @@ export interface ChatMessage {
   timestamp: string;
   modelUsed?: string;
   thinkingModeActive?: boolean;
+  language?: string;
+  translatedContent?: string;
+  isTranslating?: boolean;
+  mode?: string;
 }
 
 export interface AppSettings {
@@ -225,6 +531,10 @@ export interface AppSettings {
   jobAlerts: boolean;
   weeklyProgressDigest: boolean;
   geminiThinkingMode: boolean;
+  aiThinkingMode?: boolean;
+  compactMode?: boolean;
+  autoAtsAnalysis?: boolean;
+  recruiterVisibility?: boolean;
   fraudAlerts: boolean;
   autoSyncGithub: boolean;
   preferredLanguage: string;

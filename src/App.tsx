@@ -20,6 +20,7 @@ import { AssignmentsView } from './components/AssignmentsView';
 import { SafetyCenterView } from './components/SafetyCenterView';
 import { SettingsView } from './components/SettingsView';
 import { RoadmapView } from './components/RoadmapView';
+import { NetworkView } from './components/NetworkView';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { LoginModal } from './components/LoginModal';
 import { SmartCopilotDrawer } from './components/SmartCopilotDrawer';
@@ -169,10 +170,17 @@ export default function App() {
           </div>
         )}
 
-        {/* 6. Courses */}
+        {/* 6. Courses & YouTube Skill Tracks */}
         {currentView === 'courses' && (
           <div className="pt-20 md:pt-24 pb-24">
-            <CoursesView onNavigate={handleNavigate} />
+            <CoursesView
+              user={user}
+              onNavigate={handleNavigate}
+              onUpdateUser={handleUpdateProfile}
+              onAskNebulaAI={(prompt) => {
+                handleNavigate('nebula');
+              }}
+            />
           </div>
         )}
 
@@ -196,7 +204,19 @@ export default function App() {
             <OpportunitiesView
               user={user}
               onNavigate={handleNavigate}
+              onUpdateUser={handleUpdateProfile}
               onScanOpportunityInSafetyCenter={handleScanOpportunityInSafetyCenter}
+            />
+          </div>
+        )}
+
+        {/* 9b. Professional Career Network (SkillNet) */}
+        {currentView === 'network' && (
+          <div className="pt-20 md:pt-24 pb-24">
+            <NetworkView
+              user={user}
+              onNavigate={handleNavigate}
+              onUpdateUser={handleUpdateProfile}
             />
           </div>
         )}
@@ -204,15 +224,17 @@ export default function App() {
         {/* 10. Webinars */}
         {currentView === 'webinars' && (
           <div className="pt-20 md:pt-24 pb-24">
-            <WebinarsView onNavigate={handleNavigate} />
+            <WebinarsView
+              user={user}
+              onNavigate={handleNavigate}
+              onUpdateUser={handleUpdateProfile}
+            />
           </div>
         )}
 
         {/* 11. AI Chatbot (Nebula) */}
         {currentView === 'nebula' && (
-          <div className="pt-16">
-            <NebulaAIChat user={user} onNavigate={handleNavigate} />
-          </div>
+          <NebulaAIChat user={user} onNavigate={handleNavigate} />
         )}
 
         {/* 12. Assignments */}

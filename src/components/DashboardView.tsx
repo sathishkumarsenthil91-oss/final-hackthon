@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ViewType, UserProfile, SkillItem } from '../types';
-import { initialWebinars, initialAssignments, initialAIRecommendations } from '../data/mockData';
+import { initialWebinars, initialAssignments, initialAIRecommendations, NEBULA_LOGO_URL } from '../data/mockData';
 
 interface DashboardViewProps {
   user: UserProfile;
@@ -272,6 +272,43 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* Right 1 Col: Live Webinars & Pending Assignments */}
         <div className="space-y-6">
+          {/* Nebula AI Mentor Spotlight Card */}
+          <div
+            onClick={() => onNavigate('nebula')}
+            className="group bg-gradient-to-br from-blue-900 via-indigo-950 to-slate-950 border border-blue-500/30 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden cursor-pointer hover:border-blue-400 transition-all"
+          >
+            <div className="flex items-center gap-3.5 relative z-10">
+              <div className="relative w-14 h-14 rounded-full p-0.5 bg-gradient-to-tr from-blue-400 via-indigo-400 to-purple-400 shadow-md shadow-blue-500/30 shrink-0 group-hover:scale-105 transition-transform">
+                <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 border-2 border-white/20">
+                  <img
+                    src={NEBULA_LOGO_URL}
+                    alt="Nebula AI Circular Logo"
+                    className="w-full h-full object-cover rounded-full"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-400 ring-2 ring-slate-950 animate-pulse" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-sm font-black text-white tracking-tight">Nebula AI Realtime</h3>
+                  <span className="px-1.5 py-0.5 text-[9px] font-black bg-blue-500/30 text-blue-300 rounded-md border border-blue-400/30">
+                    28+ LANG
+                  </span>
+                </div>
+                <p className="text-xs text-blue-200/80 line-clamp-1 mt-0.5">
+                  Ask career gaps, code reviews, or interview mock in any language.
+                </p>
+                <div className="mt-2 flex items-center gap-1 text-xs font-bold text-blue-300 group-hover:text-white transition-colors">
+                  <span>Open Realtime Chat</span>
+                  <span className="material-symbols-outlined text-[14px] group-hover:translate-x-1 transition-transform">
+                    arrow_forward
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Upcoming Live Webinars */}
           <div className="bg-white dark:bg-[#151f38] border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
@@ -296,15 +333,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 >
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="font-bold text-purple-600 dark:text-purple-400 uppercase">
-                      {webinar.category}
+                      {webinar.tags[0] || 'TECH TALK'}
                     </span>
-                    <span className="text-slate-400">{webinar.date}</span>
+                    <span className="text-slate-400">{webinar.dateTime}</span>
                   </div>
                   <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">
                     {webinar.title}
                   </h4>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Host: {webinar.speakerName} ({webinar.speakerCompany})
+                    Host: {webinar.speaker.name} ({webinar.speaker.company})
                   </p>
                 </div>
               ))}
@@ -335,7 +372,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 >
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="font-bold text-blue-600 dark:text-blue-400">
-                      {assignment.courseName}
+                      {assignment.courseOrTopic}
                     </span>
                     <span className="text-amber-600 dark:text-amber-400 font-bold">
                       Due: {assignment.dueDate}

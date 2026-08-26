@@ -2,18 +2,22 @@ import React, { useState } from 'react';
 import { ViewType, UserProfile, OpportunityItem } from '../types';
 import { initialOpportunities } from '../data/mockData';
 import { GoogleLogo } from './GoogleLogo';
+import { ConnectivitySubsection } from './ConnectivitySubsection';
 
 interface OpportunitiesViewProps {
   user: UserProfile;
   onNavigate: (view: ViewType) => void;
+  onUpdateUser?: (updated: Partial<UserProfile>) => void;
   onScanOpportunityInSafetyCenter?: (url: string, content: string) => void;
 }
 
 export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
   user,
   onNavigate,
+  onUpdateUser,
   onScanOpportunityInSafetyCenter,
 }) => {
+  const [activeSubsection, setActiveSubsection] = useState<'matched' | 'connectivity'>('matched');
   const [opportunities, setOpportunities] = useState<OpportunityItem[]>(initialOpportunities);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'All' | 'Remote' | 'Hybrid' | 'Onsite'>('All');
@@ -60,7 +64,9 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
   });
 
   return (
-    <main className="pt-20 md:pt-24 pb-28 px-4 sm:px-6 max-w-3xl mx-auto flex flex-col gap-6">
+    <main className={`px-4 sm:px-6 mx-auto flex flex-col gap-6 transition-all ${
+      activeSubsection === 'connectivity' ? 'max-w-6xl w-full' : 'max-w-3xl'
+    }`}>
       {/* Toast Notification */}
       {appliedNotification && (
         <div className="fixed top-20 right-4 sm:right-8 z-50 bg-green-600 text-white px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 animate-in slide-in-from-top-4 duration-200">
@@ -69,46 +75,136 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
         </div>
       )}
 
-      {/* Header */}
-      <div className="pt-2 sm:pt-4">
-        <h1 className="text-[24px] sm:text-[28px] font-extrabold text-[#121b2e] dark:text-white tracking-tight">
-          Matched Internships
-        </h1>
-        <p className="text-[15px] text-[#434655] dark:text-[#c3c6d7] mt-1">
-          Opportunities based on your verified skills and {user.targetRole} profile.
-        </p>
-      </div>
-
-      {/* Search & Filter Bar */}
-      <div className="flex gap-2">
-        <div className="relative flex-1 h-12 bg-white dark:bg-[#1e293b] rounded-xl neu-inset flex items-center px-4 transition-all focus-within:ring-2 focus-within:ring-[#004ac6]">
-          <span className="material-symbols-outlined text-[#737686] mr-3">search</span>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search roles, companies, tech..."
-            className="bg-transparent w-full outline-none text-[15px] text-[#121b2e] dark:text-white placeholder:text-[#737686] dark:placeholder:text-slate-400 border-none p-0 h-full"
-          />
+      {/* Subsection Navigation Header */}
+      <div className="pt-2 sm:pt-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-[24px] sm:text-[28px] font-extrabold text-[#121b2e] dark:text-white tracking-tight">
+              Opportunities & Network
+            </h1>
+            <p className="text-[14px] text-[#434655] dark:text-[#c3c6d7] mt-0.5">
+              Verified career openings, peer connectivity & active learning curriculum.
+            </p>
+          </div>
         </div>
 
-        {/* Filter Dropdown/Pill */}
-        <div className="flex gap-1 bg-white dark:bg-[#1e293b] p-1 rounded-xl neu-raised items-center">
-          {(['All', 'Remote', 'Hybrid'] as const).map((type) => (
-            <button
-              key={type}
-              onClick={() => setFilterType(type)}
-              className={`px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${
-                filterType === type
-                  ? 'bg-[#004ac6] text-white shadow-sm'
-                  : 'text-[#434655] dark:text-[#c3c6d7] hover:text-[#004ac6]'
-              }`}
-            >
-              {type}
-            </button>
-          ))}
+        {/* Subsection Switcher Tabs */}
+        <div className="flex items-center gap-2 p-1 bg-slate-200/80 dark:bg-slate-800/80 rounded-2xl">
+          <button
+            onClick={() => setActiveSubsection('matched')}
+            className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              activeSubsection === 'matched'
+                ? 'bg-white dark:bg-[#121b2e] text-[#004ac6] dark:text-blue-400 shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[18px]">work</span>
+            <span>Matched Internships</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold">
+              {opportunities.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubsection('connectivity')}
+            className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              activeSubsection === 'connectivity'
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20'
+                : 'text-slate-600 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[18px]">hub</span>
+            <span>Connectivity</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              activeSubsection === 'connectivity' ? 'bg-white/20 text-white' : 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300'
+            }`}>
+              Instagram-Style
+            </span>
+          </button>
         </div>
       </div>
+
+      {/* Render Active Subsection */}
+      {activeSubsection === 'connectivity' ? (
+        <ConnectivitySubsection
+          user={user}
+          onNavigate={onNavigate}
+          onUpdateUser={onUpdateUser}
+        />
+      ) : (
+        <>
+          {/* Search & Filter Bar */}
+          <div className="flex gap-2">
+            <div className="relative flex-1 h-12 bg-white dark:bg-[#1e293b] rounded-xl neu-inset flex items-center px-4 transition-all focus-within:ring-2 focus-within:ring-[#004ac6]">
+              <span className="material-symbols-outlined text-[#737686] mr-3">search</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search roles, companies, tech..."
+                className="bg-transparent w-full outline-none text-[15px] text-[#121b2e] dark:text-white placeholder:text-[#737686] dark:placeholder:text-slate-400 border-none p-0 h-full"
+              />
+            </div>
+
+            {/* Filter Dropdown/Pill */}
+            <div className="flex gap-1 bg-white dark:bg-[#1e293b] p-1 rounded-xl neu-raised items-center">
+              {(['All', 'Remote', 'Hybrid'] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setFilterType(type)}
+                  className={`px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${
+                    filterType === type
+                      ? 'bg-[#004ac6] text-white shadow-sm'
+                      : 'text-[#434655] dark:text-[#c3c6d7] hover:text-[#004ac6]'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Featured Connectivity Subsection Banner Entry */}
+          <div
+            onClick={() => setActiveSubsection('connectivity')}
+            className="bg-gradient-to-r from-[#0d1527] via-[#1a1c38] to-[#25153f] border border-purple-500/30 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden cursor-pointer hover:border-purple-400/60 hover:shadow-xl transition-all group"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-purple-600/30 border border-purple-400/40 flex items-center justify-center text-purple-300 shrink-0 group-hover:scale-105 transition-transform">
+                  <span className="material-symbols-outlined text-[26px]">hub</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/30">
+                      SUBSECTION
+                    </span>
+                    <span className="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Connectivity & Real User Network
+                    </span>
+                  </div>
+                  <h3 className="text-base font-extrabold text-white mt-0.5 group-hover:text-purple-300 transition-colors">
+                    Professional Network & Learning Libraries
+                  </h3>
+                  <p className="text-xs text-slate-300 line-clamp-1 mt-0.5">
+                    Explore live active learners, chat with peers at Stripe & Google, and request access to private curriculum libraries.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveSubsection('connectivity');
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+              >
+                <span>Enter Connectivity</span>
+                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </button>
+            </div>
+          </div>
 
       {/* Opportunities List Container */}
       <div className="space-y-6">
@@ -269,6 +365,8 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
           );
         })}
       </div>
+      </>
+      )}
 
       {/* Opportunity Details & Safety Modal */}
       {selectedOpp && (
