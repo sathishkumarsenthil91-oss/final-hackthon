@@ -269,31 +269,31 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
     : null;
 
   return (
-    <div className="w-full bg-slate-50 dark:bg-[#0d1322] min-h-[calc(100vh-120px)] text-slate-900 dark:text-slate-100 flex flex-col relative pb-24">
+    <div className="w-full max-w-full overflow-x-hidden bg-slate-50 dark:bg-[#0d1322] min-h-[calc(100vh-120px)] text-slate-900 dark:text-slate-100 flex flex-col relative pb-24">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 right-4 sm:right-8 z-50 bg-indigo-600 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-top-4 duration-200">
-          <span className="material-symbols-outlined text-[18px]">verified</span>
-          <span>{toastMessage}</span>
+        <div className="fixed top-20 right-4 sm:right-8 z-50 max-w-[calc(100vw-2rem)] bg-indigo-600 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-in fade-in slide-in-from-top-4 duration-200">
+          <span className="material-symbols-outlined text-[18px] shrink-0">verified</span>
+          <span className="break-words">{toastMessage}</span>
         </div>
       )}
 
       {/* Top Professional Header Bar */}
-      <header className="sticky top-16 md:top-20 z-30 bg-white/90 dark:bg-[#131b2e]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md shadow-purple-500/20">
-            <span className="material-symbols-outlined text-[20px]">hub</span>
+      <header className="sticky top-16 md:top-20 z-30 bg-white/90 dark:bg-[#131b2e]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-3 sm:px-6 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md shadow-purple-500/20 shrink-0">
+            <span className="material-symbols-outlined text-[18px] sm:text-[20px]">hub</span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <h2 className="text-sm sm:text-base md:text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5 truncate">
                 Connectivity
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50">
+                <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-1.5 sm:px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50 whitespace-nowrap">
                   {isSupabaseConfigured() ? 'Supabase Live' : 'Real-User Sync'}
                 </span>
               </h2>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 -mt-0.5 hidden sm:block">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 -mt-0.5 hidden sm:block truncate">
               Professional peer network, live learning libraries & direct messaging
             </p>
           </div>
@@ -306,7 +306,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
               setActiveTab('home');
               setViewingUser(null);
             }}
-            className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'home'
                 ? 'bg-purple-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -318,7 +318,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
           <button
             onClick={() => setActiveTab('chat')}
-            className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer relative ${
+            className={`flex-1 sm:flex-initial px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer relative whitespace-nowrap ${
               activeTab === 'chat'
                 ? 'bg-purple-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -333,7 +333,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
               setActiveTab('profile');
               setViewingUser(null);
             }}
-            className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'profile' && isViewingSelf
                 ? 'bg-purple-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -345,10 +345,10 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
         </div>
 
         {/* Right Header Action Icons */}
-        <div className="flex items-center gap-2 order-2 sm:order-3">
+        <div className="flex items-center gap-1.5 sm:gap-2 order-2 sm:order-3">
           <button
             onClick={() => setShowCreatePostModal(true)}
-            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-500/20 transition-all cursor-pointer"
+            className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-purple-500/20 transition-all cursor-pointer whitespace-nowrap"
             title="Create Professional Post"
           >
             <span className="material-symbols-outlined text-[16px]">add_circle</span>
@@ -358,7 +358,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
           {/* Access Requests & Notifications Trigger */}
           <button
             onClick={() => setShowAccessRequestsModal(true)}
-            className="relative p-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+            className="relative p-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 shrink-0"
             title="Library Access Requests"
           >
             <span className="material-symbols-outlined text-[18px]">notifications</span>
@@ -375,32 +375,32 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
       {/* 1. HOME TAB: Post Feed */}
       {/* ========================================================================= */}
       {activeTab === 'home' && (
-        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6 pt-5 pb-24">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="max-w-6xl mx-auto w-full px-3 sm:px-6 pt-3 sm:pt-5 pb-24 min-w-0">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 items-start">
             {/* Main Feed Column (Cols 1-2 on desktop, full width on mobile) */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6 min-w-0">
           {/* Quick Post Prompt Bar */}
           <div
             onClick={() => setShowCreatePostModal(true)}
-            className="bg-white dark:bg-[#131b2e] rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center gap-3 cursor-pointer hover:border-purple-400 dark:hover:border-purple-600 transition-all"
+            className="bg-white dark:bg-[#131b2e] rounded-2xl p-3 sm:p-4 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center gap-2.5 sm:gap-3 cursor-pointer hover:border-purple-400 dark:hover:border-purple-600 transition-all min-w-0"
           >
             <img
               src={currentUserMapped.avatarUrl}
               alt={currentUserMapped.name}
-              className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
             />
-            <div className="flex-1 bg-slate-100 dark:bg-slate-800/70 rounded-xl px-4 py-2.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+            <div className="flex-1 bg-slate-100 dark:bg-slate-800/70 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs text-slate-500 dark:text-slate-400 font-medium truncate min-w-0">
               Share a verified certificate, learning update, or code insight...
             </div>
-            <div className="flex items-center gap-1.5 text-slate-500">
-              <span className="material-symbols-outlined text-[20px] text-purple-500">military_tech</span>
-              <span className="material-symbols-outlined text-[20px] text-indigo-500">code</span>
-              <span className="material-symbols-outlined text-[20px] text-emerald-500">image</span>
+            <div className="flex items-center gap-1 sm:gap-1.5 text-slate-500 shrink-0">
+              <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-purple-500">military_tech</span>
+              <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-indigo-500">code</span>
+              <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-emerald-500">image</span>
             </div>
           </div>
 
           {/* Feed Filter Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
             {[
               { id: 'all', label: 'All Posts', icon: 'dynamic_feed' },
               { id: 'following', label: 'Following', icon: 'person_check' },
@@ -410,7 +410,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
               <button
                 key={f.id}
                 onClick={() => setFeedFilter(f.id as any)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer ${
+                className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer whitespace-nowrap ${
                   feedFilter === f.id
                     ? 'bg-purple-600 text-white shadow-xs shadow-purple-500/20'
                     : 'bg-white dark:bg-[#131b2e] text-slate-600 dark:text-slate-400 hover:text-purple-600 border border-slate-200/80 dark:border-slate-800'
@@ -423,7 +423,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
           </div>
 
           {/* Posts Feed */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {filteredPosts.map((post) => {
               const isCurrentUserPost = post.author.isCurrentUser || post.author.id === currentUserMapped.id;
               const authorUser = users.find((u) => u.id === post.author.id);
@@ -431,10 +431,10 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
               return (
                 <article
                   key={post.id}
-                  className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs overflow-hidden"
+                  className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs overflow-hidden min-w-0"
                 >
                   {/* Post Header */}
-                  <div className="p-4 sm:p-5 flex items-center justify-between">
+                  <div className="p-3.5 sm:p-5 flex items-center justify-between gap-2">
                     <div
                       onClick={() => {
                         if (authorUser) {
@@ -445,23 +445,23 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                           setActiveTab('profile');
                         }
                       }}
-                      className="flex items-center gap-3 cursor-pointer group"
+                      className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group min-w-0 flex-1"
                     >
                       <img
                         src={post.author.avatarUrl}
                         alt={post.author.name}
-                        className="w-11 h-11 rounded-full object-cover border border-slate-200 dark:border-slate-700 group-hover:ring-2 group-hover:ring-purple-500 transition-all"
+                        className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border border-slate-200 dark:border-slate-700 group-hover:ring-2 group-hover:ring-purple-500 transition-all shrink-0"
                       />
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-500 transition-colors">
+                          <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-500 transition-colors truncate">
                             {post.author.name}
                           </h4>
-                          <span className="material-symbols-outlined text-[15px] text-blue-500" title="Verified Member">
+                          <span className="material-symbols-outlined text-[15px] text-blue-500 shrink-0" title="Verified Member">
                             verified
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 max-w-xs sm:max-w-md">
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 max-w-[140px] xs:max-w-[200px] sm:max-w-md truncate">
                           {post.author.headline} • {post.timestamp}
                         </p>
                       </div>
@@ -471,7 +471,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                     {!isCurrentUserPost && authorUser && (
                       <button
                         onClick={() => handleFollowToggle(authorUser)}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`px-2.5 sm:px-3 py-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                           authorUser.isFollowing
                             ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
                             : 'bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-300 hover:bg-purple-100 border border-purple-200 dark:border-purple-800'
@@ -483,7 +483,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   </div>
 
                   {/* Post Content */}
-                  <div className="px-4 sm:px-5 pb-3">
+                  <div className="px-3.5 sm:px-5 pb-3 break-words min-w-0">
                     <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed">
                       {post.content}
                     </p>
@@ -517,7 +517,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
                   {/* Attached Code Snippet */}
                   {post.codeSnippet && (
-                    <div className="mx-4 sm:mx-5 mb-4 bg-slate-900 text-slate-200 rounded-xl p-4 font-mono text-xs overflow-x-auto border border-slate-800 relative group">
+                    <div className="mx-3 sm:mx-5 mb-3 sm:mb-4 bg-slate-900 text-slate-200 rounded-xl p-3 sm:p-4 font-mono text-xs overflow-x-auto border border-slate-800 relative group max-w-full">
                       <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[10px] text-slate-400 uppercase tracking-wider">
                         <span>{post.codeSnippet.language}</span>
                         <button
@@ -531,7 +531,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                           Copy
                         </button>
                       </div>
-                      <pre className="text-xs leading-relaxed text-emerald-400">{post.codeSnippet.code}</pre>
+                      <pre className="text-xs leading-relaxed text-emerald-400 overflow-x-auto whitespace-pre">{post.codeSnippet.code}</pre>
                     </div>
                   )}
 
@@ -539,28 +539,28 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   {post.attachedCertificate && (
                     <div
                       onClick={() => setSelectedCertificatePreview(post.attachedCertificate || null)}
-                      className="mx-4 sm:mx-5 mb-4 bg-gradient-to-r from-amber-950/30 via-slate-900 to-slate-900 border border-amber-500/40 rounded-xl p-4 text-white flex items-center justify-between cursor-pointer hover:border-amber-400 transition-all shadow-md group"
+                      className="mx-3 sm:mx-5 mb-3 sm:mb-4 bg-gradient-to-r from-amber-950/30 via-slate-900 to-slate-900 border border-amber-500/40 rounded-xl p-3 sm:p-4 text-white flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 cursor-pointer hover:border-amber-400 transition-all shadow-md group"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0 group-hover:scale-105 transition-transform">
-                          <span className="material-symbols-outlined text-[26px]">military_tech</span>
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0 group-hover:scale-105 transition-transform">
+                          <span className="material-symbols-outlined text-[22px] sm:text-[26px]">military_tech</span>
                         </div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-500/30 text-amber-200 border border-amber-400/30">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-500/30 text-amber-200 border border-amber-400/30 whitespace-nowrap">
                               Verified Credential
                             </span>
-                            <span className="text-[10px] text-slate-400">{post.attachedCertificate.serialId}</span>
+                            <span className="text-[10px] text-slate-400 break-all">{post.attachedCertificate.serialId}</span>
                           </div>
-                          <h5 className="text-xs sm:text-sm font-bold text-white mt-0.5 group-hover:text-amber-300 transition-colors">
+                          <h5 className="text-xs sm:text-sm font-bold text-white mt-0.5 group-hover:text-amber-300 transition-colors break-words">
                             {post.attachedCertificate.title}
                           </h5>
-                          <p className="text-[11px] text-slate-300">
+                          <p className="text-[11px] text-slate-300 break-words">
                             Issued by {post.attachedCertificate.organization} • {post.attachedCertificate.issueDate}
                           </p>
                         </div>
                       </div>
-                      <span className="material-symbols-outlined text-amber-300 text-[20px] shrink-0">
+                      <span className="material-symbols-outlined text-amber-300 text-[20px] shrink-0 self-end xs:self-center">
                         visibility
                       </span>
                     </div>
@@ -568,10 +568,10 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
                   {/* Attached Poll */}
                   {post.poll && (
-                    <div className="mx-4 sm:mx-5 mb-4 bg-slate-100 dark:bg-slate-800/60 rounded-xl p-4 border border-slate-200 dark:border-slate-700/60 space-y-2.5">
-                      <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[16px] text-purple-500">poll</span>
-                        {post.poll.question}
+                    <div className="mx-3 sm:mx-5 mb-3 sm:mb-4 bg-slate-100 dark:bg-slate-800/60 rounded-xl p-3 sm:p-4 border border-slate-200 dark:border-slate-700/60 space-y-2.5">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 break-words">
+                        <span className="material-symbols-outlined text-[16px] text-purple-500 shrink-0">poll</span>
+                        <span>{post.poll.question}</span>
                       </p>
                       <div className="space-y-2">
                         {post.poll.options.map((opt) => {
@@ -582,16 +582,16 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                               onClick={() => {
                                 showToast(`Voted for "${opt.text}"!`);
                               }}
-                              className="w-full text-left p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 relative overflow-hidden flex items-center justify-between text-xs font-semibold cursor-pointer group hover:border-purple-400"
+                              className="w-full text-left p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 relative overflow-hidden flex items-center justify-between text-xs font-semibold cursor-pointer group hover:border-purple-400 gap-2"
                             >
                               <div
                                 className="absolute top-0 left-0 bottom-0 bg-purple-500/15 dark:bg-purple-500/25 transition-all"
                                 style={{ width: `${pct}%` }}
                               />
-                              <span className="relative z-10 text-slate-800 dark:text-slate-200 group-hover:text-purple-500">
+                              <span className="relative z-10 text-slate-800 dark:text-slate-200 group-hover:text-purple-500 break-words min-w-0 flex-1">
                                 {opt.text}
                               </span>
-                              <span className="relative z-10 text-[11px] text-slate-500 dark:text-slate-400 font-bold">
+                              <span className="relative z-10 text-[11px] text-slate-500 dark:text-slate-400 font-bold shrink-0">
                                 {pct}%
                               </span>
                             </button>
@@ -605,17 +605,17 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   )}
 
                   {/* Post Action Buttons (Instagram/LinkedIn Style) */}
-                  <div className="px-4 sm:px-5 py-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-slate-600 dark:text-slate-400">
-                    <div className="flex items-center gap-4 sm:gap-6">
+                  <div className="px-3.5 sm:px-5 py-2.5 sm:py-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-slate-600 dark:text-slate-400">
+                    <div className="flex items-center gap-3 sm:gap-6">
                       {/* Like Button */}
                       <button
                         onClick={() => handleLike(post.id)}
-                        className={`flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${
+                        className={`flex items-center gap-1 sm:gap-1.5 text-xs font-bold transition-all cursor-pointer ${
                           post.isLiked ? 'text-rose-500' : 'hover:text-rose-500'
                         }`}
                       >
                         <span
-                          className={`material-symbols-outlined text-[20px] ${
+                          className={`material-symbols-outlined text-[19px] sm:text-[20px] ${
                             post.isLiked ? 'fill-1 scale-110 text-rose-500' : ''
                           }`}
                         >
@@ -626,9 +626,9 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
                       {/* Comment Trigger */}
                       <button
-                        className="flex items-center gap-1.5 text-xs font-bold hover:text-purple-600 transition-colors cursor-pointer"
+                        className="flex items-center gap-1 sm:gap-1.5 text-xs font-bold hover:text-purple-600 transition-colors cursor-pointer"
                       >
-                        <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
+                        <span className="material-symbols-outlined text-[19px] sm:text-[20px]">chat_bubble</span>
                         <span>{post.commentsCount}</span>
                       </button>
 
@@ -638,9 +638,9 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                           navigator.clipboard.writeText(window.location.href);
                           showToast('Post link copied to clipboard!');
                         }}
-                        className="flex items-center gap-1.5 text-xs font-bold hover:text-blue-600 transition-colors cursor-pointer"
+                        className="flex items-center gap-1 sm:gap-1.5 text-xs font-bold hover:text-blue-600 transition-colors cursor-pointer"
                       >
-                        <span className="material-symbols-outlined text-[20px]">send</span>
+                        <span className="material-symbols-outlined text-[19px] sm:text-[20px]">send</span>
                       </button>
                     </div>
 
@@ -649,29 +649,29 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                       onClick={() => showToast('Post saved to your bookmarks!')}
                       className="text-slate-500 hover:text-purple-600 cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-[20px]">bookmark</span>
+                      <span className="material-symbols-outlined text-[19px] sm:text-[20px]">bookmark</span>
                     </button>
                   </div>
 
                   {/* Comments Thread */}
-                  <div className="px-4 sm:px-5 pb-4 pt-1 bg-slate-50/50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-800/50 space-y-3">
+                  <div className="px-3.5 sm:px-5 pb-3.5 sm:pb-4 pt-1 bg-slate-50/50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-800/50 space-y-3">
                     {post.comments && post.comments.length > 0 && (
                       <div className="space-y-2 pt-2">
                         {post.comments.slice(-3).map((comment) => (
-                          <div key={comment.id} className="flex items-start gap-2.5 text-xs">
+                          <div key={comment.id} className="flex items-start gap-2 sm:gap-2.5 text-xs min-w-0">
                             <img
                               src={comment.authorAvatar}
                               alt={comment.authorName}
                               className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5"
                             />
-                            <div className="flex-1 bg-white dark:bg-[#131b2e] p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800">
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-slate-900 dark:text-white">
+                            <div className="flex-1 bg-white dark:bg-[#131b2e] p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-bold text-slate-900 dark:text-white truncate">
                                   {comment.authorName}
                                 </span>
-                                <span className="text-[10px] text-slate-500">{comment.timestamp}</span>
+                                <span className="text-[10px] text-slate-500 shrink-0">{comment.timestamp}</span>
                               </div>
-                              <p className="text-slate-700 dark:text-slate-300 mt-0.5">{comment.content}</p>
+                              <p className="text-slate-700 dark:text-slate-300 mt-0.5 break-words">{comment.content}</p>
                             </div>
                           </div>
                         ))}
@@ -679,13 +679,13 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                     )}
 
                     {/* Comment Input */}
-                    <div className="flex items-center gap-2 pt-1">
+                    <div className="flex items-center gap-2 pt-1 min-w-0">
                       <img
                         src={currentUserMapped.avatarUrl}
                         alt={currentUserMapped.name}
                         className="w-7 h-7 rounded-full object-cover shrink-0"
                       />
-                      <div className="flex-1 flex items-center bg-white dark:bg-slate-900 rounded-xl px-3 py-1.5 border border-slate-200 dark:border-slate-700">
+                      <div className="flex-1 flex items-center bg-white dark:bg-slate-900 rounded-xl px-3 py-1.5 border border-slate-200 dark:border-slate-700 min-w-0">
                         <input
                           type="text"
                           value={commentInputs[post.id] || ''}
@@ -696,7 +696,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                             if (e.key === 'Enter') handleCommentSubmit(post.id);
                           }}
                           placeholder="Add a reply..."
-                          className="w-full bg-transparent border-none outline-none text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 p-0"
+                          className="w-full bg-transparent border-none outline-none text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 p-0 min-w-0"
                         />
                         <button
                           onClick={() => handleCommentSubmit(post.id)}
@@ -843,8 +843,8 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
       {/* 2. CHAT TAB: Real User 1-on-1 Direct Messaging */}
       {/* ========================================================================= */}
       {activeTab === 'chat' && (
-        <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 pt-5">
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[560px]">
+        <div className="max-w-4xl mx-auto w-full px-3 sm:px-6 pt-3 sm:pt-5">
+          <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[480px] sm:min-h-[560px]">
             {/* Conversations Sidebar (Col 1-5) */}
             <div
               className={`md:col-span-5 border-r border-slate-200 dark:border-slate-800 flex flex-col ${
@@ -852,13 +852,13 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
               }`}
             >
               {/* Search Header */}
-              <div className="p-4 border-b border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 space-y-2.5 sm:space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-[18px] text-purple-600">forum</span>
                     Direct Messages
                   </h3>
-                  <span className="text-[11px] font-bold text-emerald-500 flex items-center gap-1">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-emerald-500 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     Live Sync
                   </span>
@@ -878,7 +878,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
               </div>
 
               {/* Conversations List */}
-              <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
+              <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 max-h-[60vh] md:max-h-none">
                 {users
                   .filter((u) => u.name.toLowerCase().includes(chatSearch.toLowerCase()) || u.company.toLowerCase().includes(chatSearch.toLowerCase()))
                   .map((peerUser) => {
@@ -889,7 +889,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                       <div
                         key={peerUser.id}
                         onClick={() => setActiveChatUser(peerUser)}
-                        className={`p-3.5 flex items-center gap-3 cursor-pointer transition-all ${
+                        className={`p-3 sm:p-3.5 flex items-center gap-3 cursor-pointer transition-all ${
                           isSelected
                             ? 'bg-purple-50 dark:bg-purple-950/40 border-l-4 border-purple-600'
                             : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
@@ -899,15 +899,15 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                           <img
                             src={peerUser.avatarUrl}
                             alt={peerUser.name}
-                            className="w-11 h-11 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border border-slate-200 dark:border-slate-700"
                           />
                           {peerUser.onlineStatus === 'online' && (
-                            <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#131b2e]" />
+                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#131b2e]" />
                           )}
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between gap-1">
                             <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
                               {peerUser.name}
                             </h4>
@@ -934,34 +934,34 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
               {activeChatUser && activeConversation ? (
                 <>
                   {/* Chat Header */}
-                  <div className="p-3.5 sm:p-4 bg-white dark:bg-[#131b2e] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                  <div className="p-3 sm:p-4 bg-white dark:bg-[#131b2e] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                       <button
                         onClick={() => setActiveChatUser(null)}
-                        className="md:hidden text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                        className="md:hidden p-1 text-slate-500 hover:text-slate-900 dark:hover:text-white shrink-0"
                       >
-                        <span className="material-symbols-outlined">arrow_back</span>
+                        <span className="material-symbols-outlined text-[20px]">arrow_back</span>
                       </button>
                       <div
                         onClick={() => {
                           setViewingUser(activeChatUser);
                           setActiveTab('profile');
                         }}
-                        className="flex items-center gap-2.5 cursor-pointer group"
+                        className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group min-w-0"
                       >
-                        <div className="relative">
+                        <div className="relative shrink-0">
                           <img
                             src={activeChatUser.avatarUrl}
                             alt={activeChatUser.name}
-                            className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700"
                           />
                           <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-white" />
                         </div>
-                        <div>
-                          <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-600 transition-colors">
+                        <div className="min-w-0">
+                          <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-600 transition-colors truncate">
                             {activeChatUser.name}
                           </h4>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
                             {activeChatUser.role} @ {activeChatUser.company}
                           </p>
                         </div>
@@ -974,17 +974,17 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                         setViewingUser(activeChatUser);
                         setActiveTab('profile');
                       }}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-purple-600 transition-colors flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-purple-600 transition-colors flex items-center gap-1 cursor-pointer shrink-0"
                     >
                       <span className="material-symbols-outlined text-[14px]">account_circle</span>
-                      View Profile
+                      <span className="hidden xs:inline">View Profile</span>
                     </button>
                   </div>
 
                   {/* Messages Bubble Area */}
-                  <div className="flex-1 p-4 overflow-y-auto space-y-3 min-h-[380px] max-h-[460px]">
+                  <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 min-h-[320px] sm:min-h-[380px] max-h-[460px]">
                     {activeConversation.messages.length === 0 ? (
-                      <div className="text-center py-12 text-slate-400">
+                      <div className="text-center py-10 sm:py-12 text-slate-400">
                         <span className="material-symbols-outlined text-4xl text-purple-400 mb-2">
                           waving_hand
                         </span>
@@ -1005,7 +1005,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                             className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
                           >
                             <div
-                              className={`max-w-xs sm:max-w-md px-4 py-2.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
+                              className={`max-w-[85%] sm:max-w-md px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs sm:text-sm leading-relaxed break-words ${
                                 isMe
                                   ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-br-none shadow-xs'
                                   : 'bg-white dark:bg-[#1a233a] text-slate-800 dark:text-slate-200 rounded-bl-none border border-slate-200/80 dark:border-slate-800 shadow-xs'
@@ -1023,27 +1023,27 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   {/* Message Input Box */}
                   <form
                     onSubmit={handleSendMessage}
-                    className="p-3 bg-white dark:bg-[#131b2e] border-t border-slate-200 dark:border-slate-800 flex items-center gap-2"
+                    className="p-2.5 sm:p-3 bg-white dark:bg-[#131b2e] border-t border-slate-200 dark:border-slate-800 flex items-center gap-2"
                   >
                     <input
                       type="text"
                       value={chatMessageText}
                       onChange={(e) => setChatMessageText(e.target.value)}
                       placeholder={`Message ${activeChatUser.name.split(' ')[0]}...`}
-                      className="flex-1 bg-slate-100 dark:bg-slate-800/60 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none border border-transparent focus:border-purple-500"
+                      className="flex-1 bg-slate-100 dark:bg-slate-800/60 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none border border-transparent focus:border-purple-500 min-w-0"
                     />
                     <button
                       type="submit"
                       disabled={!chatMessageText.trim()}
-                      className="p-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white disabled:opacity-40 hover:from-purple-500 hover:to-indigo-500 transition-all cursor-pointer shrink-0 shadow-xs"
+                      className="p-2 sm:p-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white disabled:opacity-40 hover:from-purple-500 hover:to-indigo-500 transition-all cursor-pointer shrink-0 shadow-xs"
                     >
                       <span className="material-symbols-outlined text-[18px]">send</span>
                     </button>
                   </form>
                 </>
               ) : (
-                <div className="text-center py-20 text-slate-400">
-                  <span className="material-symbols-outlined text-5xl text-purple-400 mb-2">
+                <div className="text-center py-16 sm:py-20 text-slate-400 px-4">
+                  <span className="material-symbols-outlined text-4xl sm:text-5xl text-purple-400 mb-2">
                     chat
                   </span>
                   <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">
@@ -1063,11 +1063,11 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
       {/* 3. PROFILE TAB: Professional Info, Skills, Certificates, Library */}
       {/* ========================================================================= */}
       {activeTab === 'profile' && (
-        <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 pt-5 space-y-6">
+        <div className="max-w-3xl mx-auto w-full px-3 sm:px-6 pt-3 sm:pt-5 space-y-4 sm:space-y-6">
           {/* Top Banner & Profile Header */}
           <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs overflow-hidden">
             {/* Cover Image */}
-            <div className="h-32 sm:h-40 w-full relative bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900">
+            <div className="h-28 sm:h-40 w-full relative bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900">
               {activeProfile.coverUrl && (
                 <img
                   src={activeProfile.coverUrl}
@@ -1078,42 +1078,43 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
               {isViewingSelf && (
                 <button
                   onClick={() => setShowEditProfileModal(true)}
-                  className="absolute top-3 right-3 px-3 py-1 rounded-xl bg-black/40 hover:bg-black/60 text-white text-xs font-bold backdrop-blur-xs flex items-center gap-1 transition-all cursor-pointer"
+                  className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 px-2.5 sm:px-3 py-1 rounded-xl bg-black/40 hover:bg-black/60 text-white text-[11px] sm:text-xs font-bold backdrop-blur-xs flex items-center gap-1 transition-all cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[14px]">edit</span>
-                  Edit Cover & Info
+                  <span className="hidden xs:inline">Edit Cover & Info</span>
+                  <span className="xs:hidden">Edit</span>
                 </button>
               )}
             </div>
 
             {/* Avatar & Main Info */}
-            <div className="px-5 sm:px-6 pb-6 pt-0 relative">
-              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-12 sm:-mt-14 mb-4">
-                <div className="relative inline-block">
+            <div className="px-4 sm:px-6 pb-5 sm:pb-6 pt-0 relative">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 -mt-10 sm:-mt-14 mb-3 sm:mb-4">
+                <div className="relative inline-block self-start">
                   <img
                     src={activeProfile.avatarUrl}
                     alt={activeProfile.name}
-                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-4 border-white dark:border-[#131b2e] shadow-lg"
+                    className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl object-cover border-4 border-white dark:border-[#131b2e] shadow-lg"
                   />
                   {activeProfile.onlineStatus === 'online' && (
-                    <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-[#131b2e]" />
+                    <span className="absolute bottom-1 right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-[#131b2e]" />
                   )}
                 </div>
 
                 {/* Profile Controls */}
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
                   {isViewingSelf ? (
                     <>
                       <button
                         onClick={() => setShowEditProfileModal(true)}
-                        className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-slate-200 dark:border-slate-700"
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-slate-200 dark:border-slate-700"
                       >
                         <span className="material-symbols-outlined text-[16px]">manage_accounts</span>
                         Edit Profile
                       </button>
                       <button
                         onClick={() => setShowAccessRequestsModal(true)}
-                        className="px-4 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 text-purple-700 dark:text-purple-300 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-purple-200 dark:border-purple-800"
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 text-purple-700 dark:text-purple-300 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-purple-200 dark:border-purple-800"
                       >
                         <span className="material-symbols-outlined text-[16px]">lock_open</span>
                         Access Requests ({pendingRequestsForMe.length})
@@ -1124,7 +1125,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                       {/* Follow Button */}
                       <button
                         onClick={() => handleFollowToggle(activeProfile)}
-                        className={`px-5 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                        className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
                           activeProfile.isFollowing
                             ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-rose-50 hover:text-rose-600'
                             : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white'
@@ -1139,7 +1140,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                       {/* Message Button */}
                       <button
                         onClick={() => openChatWithUser(activeProfile)}
-                        className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-slate-200 dark:border-slate-700"
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-slate-200 dark:border-slate-700"
                       >
                         <span className="material-symbols-outlined text-[16px]">chat</span>
                         Message
@@ -1151,11 +1152,11 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
               {/* Name, Headline & Bio */}
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white">
                     {activeProfile.name}
                   </h3>
-                  <span className="material-symbols-outlined text-blue-500 text-[20px]" title="Verified Profile">
+                  <span className="material-symbols-outlined text-blue-500 text-[18px] sm:text-[20px]" title="Verified Profile">
                     verified
                   </span>
                   {activeProfile.isPrivate && (
@@ -1166,21 +1167,21 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   )}
                 </div>
 
-                <p className="text-xs sm:text-sm font-semibold text-purple-600 dark:text-purple-400 mt-0.5">
+                <p className="text-xs sm:text-sm font-semibold text-purple-600 dark:text-purple-400 mt-0.5 break-words">
                   {activeProfile.headline}
                 </p>
 
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
                   <span>{activeProfile.company}</span> • <span>{activeProfile.location}</span>
                 </p>
 
-                <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 mt-3 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 mt-2.5 sm:mt-3 leading-relaxed break-words">
                   {activeProfile.bio}
                 </p>
               </div>
 
               {/* Stats Bar */}
-              <div className="flex items-center gap-6 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-xs">
+              <div className="flex items-center justify-between sm:justify-start gap-4 sm:gap-6 mt-4 pt-3.5 sm:pt-4 border-t border-slate-100 dark:border-slate-800 text-xs overflow-x-auto">
                 <div>
                   <span className="font-extrabold text-slate-900 dark:text-white mr-1">
                     {posts.filter((p) => p.author.id === activeProfile.id || (isViewingSelf && p.author.isCurrentUser)).length}
@@ -1210,7 +1211,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
           </div>
 
           {/* Profile Navigation Tabs: Info & Skills | Certificates | Library */}
-          <div className="flex items-center border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131b2e] rounded-xl px-2 py-1 shadow-xs">
+          <div className="flex items-center border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131b2e] rounded-xl p-1 shadow-xs gap-1">
             {[
               { id: 'info', label: 'Info & Skills', icon: 'psychology' },
               { id: 'certificates', label: `Certificates (${activeProfile.certificates?.length || 0})`, icon: 'military_tech' },
@@ -1219,17 +1220,17 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
               <button
                 key={tab.id}
                 onClick={() => setProfileTab(tab.id as any)}
-                className={`flex-1 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`flex-1 py-2 sm:py-2.5 px-1 sm:px-2 rounded-lg text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1 sm:gap-1.5 transition-all cursor-pointer ${
                   profileTab === tab.id
                     ? 'bg-purple-600 text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-purple-600'
                 }`}
               >
-                <span className="material-symbols-outlined text-[16px]">{tab.icon}</span>
-                <span>{tab.label}</span>
+                <span className="material-symbols-outlined text-[15px] sm:text-[16px] shrink-0">{tab.icon}</span>
+                <span className="truncate">{tab.label}</span>
                 {tab.badge && (
                   <span
-                    className={`text-[9px] font-black uppercase px-1.5 py-0.2 rounded ${
+                    className={`text-[9px] font-black uppercase px-1.5 py-0.2 rounded shrink-0 hidden xs:inline ${
                       profileTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
                     }`}
                   >
@@ -1579,16 +1580,16 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
       {/* 1. Create Post Modal */}
       {showCreatePostModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-5 sm:p-6 max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in">
+          <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-4 sm:p-6 max-w-lg w-full max-h-[92vh] overflow-y-auto border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-up">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-purple-600">post_add</span>
                 Create Professional Post
               </h3>
               <button
                 onClick={() => setShowCreatePostModal(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
@@ -1599,7 +1600,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                 <img
                   src={currentUserMapped.avatarUrl}
                   alt={currentUserMapped.name}
-                  className="w-10 h-10 rounded-full object-cover"
+                  className="w-10 h-10 rounded-full object-cover shrink-0"
                 />
                 <div>
                   <h4 className="text-xs font-bold text-slate-900 dark:text-white">
@@ -1781,8 +1782,8 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
       {/* 2. Access Requests Modal / Notification Drawer */}
       {showAccessRequestsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-5 sm:p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in">
+          <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-purple-600">lock_open</span>
@@ -1790,7 +1791,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
               </h3>
               <button
                 onClick={() => setShowAccessRequestsModal(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
@@ -1817,10 +1818,10 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                       <img
                         src={req.requesterAvatar}
                         alt={req.requesterName}
-                        className="w-10 h-10 rounded-full object-cover"
+                        className="w-10 h-10 rounded-full object-cover shrink-0"
                       />
-                      <div>
-                        <h5 className="text-xs font-bold text-slate-900 dark:text-white">
+                      <div className="min-w-0 flex-1">
+                        <h5 className="text-xs font-bold text-slate-900 dark:text-white truncate">
                           {req.requesterName}
                         </h5>
                         <p className="text-[10px] text-slate-500 line-clamp-1">{req.requesterHeadline}</p>
@@ -1854,15 +1855,15 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
       {/* 3. Edit Profile Modal */}
       {showEditProfileModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-5 sm:p-6 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in">
+          <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
                 Edit Professional Profile
               </h3>
               <button
                 onClick={() => setShowEditProfileModal(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
@@ -1895,13 +1896,13 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
               </div>
 
               {/* Privacy Setting Toggle */}
-              <div className="p-3.5 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900 flex items-center justify-between">
-                <div>
+              <div className="p-3.5 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900 flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
                   <h5 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[16px] text-purple-600">lock</span>
-                    Private Learning Library
+                    <span className="material-symbols-outlined text-[16px] text-purple-600 shrink-0">lock</span>
+                    <span>Private Learning Library</span>
                   </h5>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
                     Require other members to request access before viewing your learning activity.
                   </p>
                 </div>
@@ -1909,7 +1910,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   type="checkbox"
                   checked={isPrivateAccount}
                   onChange={(e) => setIsPrivateAccount(e.target.checked)}
-                  className="w-5 h-5 accent-purple-600 rounded cursor-pointer"
+                  className="w-5 h-5 accent-purple-600 rounded cursor-pointer shrink-0"
                 />
               </div>
 
@@ -1917,7 +1918,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowEditProfileModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1935,11 +1936,11 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
       {/* 4. Active Story Viewer Modal */}
       {activeStoryUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
-          <div className="bg-[#131b2e] rounded-3xl p-6 max-w-sm w-full border border-purple-500/40 text-white shadow-2xl space-y-4 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 animate-fade-in">
+          <div className="bg-[#131b2e] rounded-3xl p-5 sm:p-6 max-w-sm w-full border border-purple-500/40 text-white shadow-2xl space-y-4 relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setActiveStoryUser(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer"
             >
               <span className="material-symbols-outlined">close</span>
             </button>
@@ -1949,24 +1950,24 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
               <img
                 src={activeStoryUser.avatarUrl}
                 alt={activeStoryUser.name}
-                className="w-12 h-12 rounded-full object-cover border-2 border-purple-400"
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-purple-400 shrink-0"
               />
-              <div>
-                <h4 className="text-sm font-bold">{activeStoryUser.name}</h4>
-                <p className="text-[11px] text-purple-300">{activeStoryUser.company}</p>
+              <div className="min-w-0">
+                <h4 className="text-sm font-bold truncate">{activeStoryUser.name}</h4>
+                <p className="text-[11px] text-purple-300 truncate">{activeStoryUser.company}</p>
               </div>
             </div>
 
             {/* Active Learning Status */}
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-950/80 to-slate-900 border border-purple-400/30 space-y-2">
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-purple-950/80 to-slate-900 border border-purple-400/30 space-y-2">
               <span className="text-[10px] uppercase font-black tracking-wider text-emerald-400 flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                 Currently Studying Live
               </span>
-              <h5 className="text-base font-extrabold text-white">
+              <h5 className="text-sm sm:text-base font-extrabold text-white break-words">
                 {activeStoryUser.currentlyStudyingStory?.courseTitle || 'Advanced Systems Architecture'}
               </h5>
-              <p className="text-xs text-slate-300">
+              <p className="text-xs text-slate-300 break-words">
                 Topic: {activeStoryUser.currentlyStudyingStory?.topic || 'Distributed Schedulers & Go'}
               </p>
               <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden mt-2">
@@ -1985,7 +1986,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   setActiveStoryUser(null);
                   setActiveTab('profile');
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors cursor-pointer text-center"
+                className="flex-1 py-2 sm:py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors cursor-pointer text-center"
               >
                 View Full Profile
               </button>
@@ -1994,7 +1995,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   openChatWithUser(activeStoryUser);
                   setActiveStoryUser(null);
                 }}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-colors cursor-pointer"
+                className="px-4 py-2 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-colors cursor-pointer"
               >
                 Chat
               </button>
