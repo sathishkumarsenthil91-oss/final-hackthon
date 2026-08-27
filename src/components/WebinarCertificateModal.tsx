@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { WebinarItem, WebinarCertificate, UserProfile } from '../types';
+import { downloadFileToFolder } from '../services/youtubeLearningService';
 
 interface WebinarCertificateModalProps {
   webinar: WebinarItem;
@@ -60,14 +61,8 @@ export const WebinarCertificateModal: React.FC<WebinarCertificateModalProps> = (
 
   const handlePrintOrDownload = () => {
     setIsDownloading(true);
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      // Fallback print current window if popup blocked
-      window.print();
-      setIsDownloading(false);
-      return;
-    }
+    const sanitizedTitle = (webinar.title || 'Webinar_Certificate').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 35);
+    const filename = `IndustrySkill_Webinar_Certificate_${certId || sanitizedTitle}.html`;
 
     const html = `
       <!DOCTYPE html>
@@ -257,9 +252,22 @@ export const WebinarCertificateModal: React.FC<WebinarCertificateModalProps> = (
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+    // 1. Download certificate file directly into user's folder
+    downloadFileToFolder(html, filename, 'text/html');
+
+    // 2. Open print dialog for PDF saving if available
+    try {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+      } else {
+        window.print();
+      }
+    } catch (e) {
+      console.log('Popup blocked, file was saved directly to Downloads folder.');
+    }
     setIsDownloading(false);
 
     if (onCertificateClaimed) {

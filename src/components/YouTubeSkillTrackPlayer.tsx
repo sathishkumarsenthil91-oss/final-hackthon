@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { YouTubeLearningTrack, UserProfile, UnofficialLearningRecord } from '../types';
 import {
   formatSecondsToTime,
@@ -15,6 +15,7 @@ interface YouTubeSkillTrackPlayerProps {
   onUpdateTrack: (updated: YouTubeLearningTrack) => void;
   onClose: () => void;
   onAskNebulaAI?: (prompt: string) => void;
+  onGenerateCertificate?: (track: YouTubeLearningTrack) => void;
 }
 
 export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = ({
@@ -23,6 +24,7 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
   onUpdateTrack,
   onClose,
   onAskNebulaAI,
+  onGenerateCertificate,
 }) => {
   // Navigation tabs
   const [activeTab, setActiveTab] = useState<'player' | 'summary' | 'notes' | 'record'>('player');
@@ -64,6 +66,23 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
   const isPlayingRef = useRef<boolean>(isPlaying);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [hasPlaybackError, setHasPlaybackError] = useState<boolean>(false);
+
+  // Stable Iframe Embed Source: CRITICAL to prevent infinite iframe reload/refresh loop!
+  // The iframe src MUST NEVER be modified while playing the video; seeking is handled exclusively via postMessage.
+  const initialStartSecondsRef = useRef<number>(Math.max(0, Math.floor(track.currentTime || 0)));
+  const initialVideoIdRef = useRef<string>(track.videoId);
+
+  if (initialVideoIdRef.current !== track.videoId) {
+    initialVideoIdRef.current = track.videoId;
+    initialStartSecondsRef.current = Math.max(0, Math.floor(track.currentTime || 0));
+  }
+
+  const embedSrc = useMemo(() => {
+    const vid = initialVideoIdRef.current;
+    const startSec = initialStartSecondsRef.current;
+    const startParam = startSec > 0 ? `&start=${startSec}` : '';
+    return `https://www.youtube.com/embed/${vid}?enablejsapi=1&autoplay=1${startParam}&rel=0&modestbranding=1&playsinline=1`;
+  }, [track.videoId]);
 
   // Timeline Scrubbing & Mouse Drag state
   const [isScrubbing, setIsScrubbing] = useState<boolean>(false);
@@ -170,17 +189,39 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
     }
   }, []);
 
+  const handleIframeLoad = useCallback(() => {
+    // Handshake with YouTube Iframe API
+    sendIframeCommand('listening');
+    if (isPlayingRef.current) {
+      sendIframeCommand('playVideo');
+    }
+  }, [sendIframeCommand]);
+
   // Handle incoming postMessage events from YouTube player
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (!event.data || typeof event.data !== 'string') return;
+      if (!event.data) return;
       try {
-        const data = JSON.parse(event.data);
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (!data || typeof data !== 'object') return;
+
+        // Catch YouTube playback errors (e.g. error 101/150 for restricted embeds)
+        if (
+          data.event === 'onError' ||
+          (data.info && typeof data.info === 'number' && [2, 5, 100, 101, 150].includes(data.info))
+        ) {
+          if (data.info === 101 || data.info === 150 || data.info === 100) {
+            setHasPlaybackError(true);
+          }
+        }
+
         if (data.event === 'infoDelivery' && data.info) {
           if (typeof data.info.currentTime === 'number') {
             const time = data.info.currentTime;
-            setCurrentTime(time);
-            lastCheckedTimeRef.current = time;
+            if (!isScrubbingRef.current) {
+              setCurrentTime(time);
+              lastCheckedTimeRef.current = time;
+            }
           }
           if (typeof data.info.duration === 'number' && data.info.duration > 0) {
             setDuration(data.info.duration);
@@ -203,7 +244,7 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
           }
         }
       } catch (e) {
-        // Not a JSON message from YouTube, ignore
+        // Non-JSON message from external frame, ignore safely
       }
     };
 
@@ -421,9 +462,6 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
     onClose();
   };
 
-  // Start position for iframe
-  const startSeconds = Math.max(0, Math.floor(track.currentTime || 0));
-
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto animate-fade-in">
       <div className="bg-slate-900 border border-slate-800 text-white rounded-3xl max-w-5xl w-full overflow-hidden shadow-2xl flex flex-col my-auto max-h-[94vh]">
@@ -588,11 +626,10 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
             >
               <iframe
                 ref={iframeRef}
-                src={`https://www.youtube-nocookie.com/embed/${track.videoId}?enablejsapi=1&autoplay=1&start=${startSeconds}&rel=0&modestbranding=1&playsinline=1${
-                  typeof window !== 'undefined' && window.location.origin ? `&origin=${encodeURIComponent(window.location.origin)}` : ''
-                }`}
+                src={embedSrc}
                 title={track.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                onLoad={handleIframeLoad}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                 allowFullScreen
                 className="w-full h-full border-0"
               />
@@ -1140,8 +1177,22 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
                 {/* Actions */}
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <button
+                    onClick={() => {
+                      if (onGenerateCertificate) {
+                        onGenerateCertificate(track);
+                      } else {
+                        downloadRecordAsPDF(learningRecord);
+                      }
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-lg"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">workspace_premium</span>
+                    Generate & Download Certificate
+                  </button>
+
+                  <button
                     onClick={() => downloadRecordAsPDF(learningRecord)}
-                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-lg"
+                    className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-lg"
                   >
                     <span className="material-symbols-outlined text-[18px]">download</span>
                     Download Record PDF

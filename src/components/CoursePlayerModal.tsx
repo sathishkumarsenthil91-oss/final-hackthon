@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CourseItem, CourseLesson, CourseModule, UserProfile } from '../types';
+import { downloadFileToFolder } from '../services/youtubeLearningService';
 
 interface CoursePlayerModalProps {
   course: CourseItem;
@@ -99,42 +100,54 @@ export const CoursePlayerModal: React.FC<CoursePlayerModalProps> = ({
   const handleClaimCertificate = () => {
     setShowCertSuccess(true);
     setTimeout(() => {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        const certId = `IS-CRS-2026-${course.id.toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
-        const html = `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>Course Certificate - ${course.title}</title>
-              <meta charset="utf-8" />
-              <style>
-                @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=Playfair+Display:wght@700&display=swap');
-                body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; padding: 40px; display: flex; justify-content: center; }
-                .cert-container { width: 900px; background: white; border: 12px solid #1e3a8a; padding: 48px; position: relative; text-align: center; }
-                .title { font-family: 'Playfair Display', serif; font-size: 32px; color: #1e3a8a; margin-top: 10px; }
-                .name { font-size: 32px; font-weight: 800; color: #2563eb; margin: 20px 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
-                .course { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
-                .meta { margin-top: 30px; font-size: 13px; color: #64748b; }
-              </style>
-            </head>
-            <body>
-              <div class="cert-container">
-                <div style="font-size: 12px; font-weight: 900; color: #2563eb; letter-spacing: 2px;">INDUSTRYSKILL ACADEMIC PLATFORM</div>
-                <h1 class="title">Certificate of Course Completion</h1>
-                <p style="margin-top: 20px; font-size: 14px; color: #64748b;">This is to certify that</p>
-                <div class="name">${user.name || 'Learner'}</div>
-                <p style="font-size: 14px; color: #475569;">has successfully completed all modules, practical laboratories, and final assessments for</p>
-                <div class="course">"${course.title}"</div>
-                <p style="font-size: 12px; color: #64748b;">Instructor: <strong>${course.instructor?.name || 'Faculty Staff'}</strong> (${course.instructor?.role || 'Staff Engineer'} @ ${course.instructor?.company || 'Industry Partner'})</p>
-                <div class="meta">Certificate ID: <strong>${certId}</strong> • Date: <strong>${new Date().toLocaleDateString()}</strong></div>
-              </div>
-            </body>
-          </html>
-        `;
-        printWindow.document.open();
-        printWindow.document.write(html);
-        printWindow.document.close();
+      const certId = `IS-CRS-2026-${course.id.toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const sanitizedTitle = (course.title || 'Course_Certificate').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 35);
+      const filename = `IndustrySkill_Certificate_${certId || sanitizedTitle}.html`;
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Course Certificate - ${course.title}</title>
+            <meta charset="utf-8" />
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=Playfair+Display:wght@700&display=swap');
+              body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f172a; padding: 40px; display: flex; justify-content: center; }
+              .cert-container { width: 900px; background: white; border: 12px solid #1e3a8a; padding: 48px; position: relative; text-align: center; }
+              .title { font-family: 'Playfair Display', serif; font-size: 32px; color: #1e3a8a; margin-top: 10px; }
+              .name { font-size: 32px; font-weight: 800; color: #2563eb; margin: 20px 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+              .course { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
+              .meta { margin-top: 30px; font-size: 13px; color: #64748b; }
+            </style>
+          </head>
+          <body>
+            <div class="cert-container">
+              <div style="font-size: 12px; font-weight: 900; color: #2563eb; letter-spacing: 2px;">INDUSTRYSKILL ACADEMIC PLATFORM</div>
+              <h1 class="title">Certificate of Course Completion</h1>
+              <p style="margin-top: 20px; font-size: 14px; color: #64748b;">This is to certify that</p>
+              <div class="name">${user.name || 'Learner'}</div>
+              <p style="font-size: 14px; color: #475569;">has successfully completed all modules, practical laboratories, and final assessments for</p>
+              <div class="course">"${course.title}"</div>
+              <p style="font-size: 12px; color: #64748b;">Instructor: <strong>${course.instructor?.name || 'Faculty Staff'}</strong> (${course.instructor?.role || 'Staff Engineer'} @ ${course.instructor?.company || 'Industry Partner'})</p>
+              <div class="meta">Certificate ID: <strong>${certId}</strong> • Date: <strong>${new Date().toLocaleDateString()}</strong></div>
+            </div>
+          </body>
+        </html>
+      `;
+
+      // 1. Download certificate file directly into user's folder
+      downloadFileToFolder(html, filename, 'text/html');
+
+      // 2. Open print dialog
+      try {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.open();
+          printWindow.document.write(html);
+          printWindow.document.close();
+        }
+      } catch (e) {
+        console.log('Popup blocked, file was saved directly to Downloads folder.');
       }
     }, 400);
   };

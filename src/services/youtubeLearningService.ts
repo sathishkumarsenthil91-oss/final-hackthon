@@ -389,14 +389,32 @@ export function createUnofficialRecord(
 }
 
 /**
- * Triggers clean PDF / Print download of learning notes
+ * Helper to download content directly into the user's Downloads folder
+ */
+export function downloadFileToFolder(content: string, filename: string, mimeType: string = 'text/html') {
+  try {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 200);
+  } catch (err) {
+    console.error('Failed to download file to folder:', err);
+  }
+}
+
+/**
+ * Triggers clean PDF / Print download of learning notes and saves to folder
  */
 export function downloadNotesAsPDF(track: YouTubeLearningTrack, userName: string) {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert('Please allow popups to download and print your notes.');
-    return;
-  }
+  const sanitizedTitle = (track.title || 'Learning_Notes').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 40);
+  const filename = `${sanitizedTitle}_Notes.html`;
 
   const keyPointsHtml = track.aiSummary?.keyPoints
     ?.map((kp) => `<li style="margin-bottom: 8px; font-size: 13px; color: #334155; line-height: 1.5;">${kp}</li>`)
@@ -492,20 +510,28 @@ export function downloadNotesAsPDF(track: YouTubeLearningTrack, userName: string
     </html>
   `;
 
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
+  // 1. Download file directly into user's folder
+  downloadFileToFolder(html, filename, 'text/html');
+
+  // 2. Open print dialog for instant PDF print
+  try {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+    }
+  } catch (e) {
+    console.log('Popup blocked, file was saved directly to Downloads folder.');
+  }
 }
 
 /**
  * Triggers clean PDF / Print download of the Unofficial Learning Completion Record
  */
 export function downloadRecordAsPDF(record: UnofficialLearningRecord) {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert('Please allow popups to download and print your completion record.');
-    return;
-  }
+  const sanitizedTitle = (record.videoTitle || 'Learning_Record').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 40);
+  const filename = `Certificate_${record.recordId || sanitizedTitle}.html`;
 
   const html = `
     <!DOCTYPE html>
@@ -589,7 +615,18 @@ export function downloadRecordAsPDF(record: UnofficialLearningRecord) {
     </html>
   `;
 
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
+  // 1. Download file directly into user's folder
+  downloadFileToFolder(html, filename, 'text/html');
+
+  // 2. Open print dialog for PDF saving
+  try {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+    }
+  } catch (e) {
+    console.log('Popup blocked, file was saved directly to Downloads folder.');
+  }
 }

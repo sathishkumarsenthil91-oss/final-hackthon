@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CourseItem, WebinarItem, YouTubeLearningTrack, GeneratedCertificate, UserProfile } from '../types';
+import { downloadFileToFolder } from '../services/youtubeLearningService';
 
 interface CertificateGenerationModalProps {
   type: 'course' | 'webinar' | 'youtube_track';
@@ -152,12 +153,8 @@ export const CertificateGenerationModal: React.FC<CertificateGenerationModalProp
 
   const handlePrintOrDownloadPDF = () => {
     setIsDownloading(true);
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      window.print();
-      setIsDownloading(false);
-      return;
-    }
+    const sanitizedTitle = (title || 'Certificate').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 35);
+    const filename = `IndustrySkill_Certificate_${serialId || sanitizedTitle}.html`;
 
     const html = `
       <!DOCTYPE html>
@@ -395,9 +392,22 @@ export const CertificateGenerationModal: React.FC<CertificateGenerationModalProp
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+    // 1. Download certificate file directly into user's Downloads folder
+    downloadFileToFolder(html, filename, 'text/html');
+
+    // 2. Open print dialog for PDF saving if available
+    try {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+      } else {
+        window.print();
+      }
+    } catch (e) {
+      console.log('Popup blocked, file was saved directly to Downloads folder.');
+    }
     setIsDownloading(false);
   };
 

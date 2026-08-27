@@ -222,13 +222,6 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
         });
       }
     }
-
-    setActivePlayerTrack((curr) => {
-      if (curr && (curr.id === updatedTrack.id || curr.videoId === updatedTrack.videoId)) {
-        return updatedTrack;
-      }
-      return curr;
-    });
   };
 
   const [selectedCourseForPlayer, setSelectedCourseForPlayer] = useState<CourseItem | null>(null);
@@ -590,40 +583,61 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Card Footer Actions */}
-                    <div className="p-5 pt-0 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setActivePlayerTrack(track)}
-                          className={`flex-1 py-2.5 rounded-xl font-bold text-xs shadow-xs transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 ${
-                            isCompleted
-                              ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                              : 'bg-blue-600 hover:bg-blue-700 text-white'
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-[16px]">play_arrow</span>
-                          {track.currentTime > 0 ? 'Continue Learning' : 'Start Track'}
-                        </button>
+                      {/* Card Footer Actions */}
+                      <div className="p-5 pt-0 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setActivePlayerTrack(track)}
+                            className={`flex-1 py-2.5 rounded-xl font-bold text-xs shadow-xs transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 ${
+                              isCompleted
+                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[16px]">play_arrow</span>
+                            {track.currentTime > 0 ? 'Continue Learning' : 'Start Track'}
+                          </button>
 
-                        <button
-                          onClick={() => downloadNotesAsPDF(track, user.name)}
-                          className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                          title="Download Notes as PDF"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">download</span>
-                        </button>
+                          <button
+                            onClick={() => downloadNotesAsPDF(track, user.name)}
+                            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                            title="Download Notes as PDF"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">download</span>
+                          </button>
+
+                          <button
+                            onClick={() => setCertModalItem({ type: 'youtube_track', item: track })}
+                            className="p-2.5 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors cursor-pointer"
+                            title="Generate & Download Certificate"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">workspace_premium</span>
+                          </button>
+                        </div>
+
+                        {isCompleted && (
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              onClick={() => setCertModalItem({ type: 'youtube_track', item: track })}
+                              className="flex-1 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                            >
+                              <span className="material-symbols-outlined text-[15px]">workspace_premium</span>
+                              Generate & Download Certificate
+                            </button>
+
+                            {track.learningRecord && (
+                              <button
+                                onClick={() => setViewingRecord(track.learningRecord!)}
+                                className="px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 font-bold text-xs flex items-center justify-center gap-1 transition-all cursor-pointer"
+                                title="View Verified Record"
+                              >
+                                <span className="material-symbols-outlined text-[15px]">military_tech</span>
+                                Record
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
-
-                      {isCompleted && track.learningRecord && (
-                        <button
-                          onClick={() => setViewingRecord(track.learningRecord!)}
-                          className="w-full py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-[15px]">military_tech</span>
-                          View Verified Record ({track.learningRecord.recordId.substring(0, 14)}...)
-                        </button>
-                      )}
-                    </div>
                   </div>
                 );
               })}
@@ -854,6 +868,7 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
           onUpdateTrack={handleUpdateTrack}
           onClose={() => setActivePlayerTrack(null)}
           onAskNebulaAI={onAskNebulaAI}
+          onGenerateCertificate={(track) => setCertModalItem({ type: 'youtube_track', item: track })}
         />
       )}
 
