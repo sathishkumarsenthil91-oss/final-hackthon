@@ -817,6 +817,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">LinkedIn Profile URL</label>
+                  <input
+                    type="text"
+                    value={formData.linkedinUrl || ''}
+                    onChange={(e) => setFormData({ ...formData, linkedinUrl: e.target.value })}
+                    placeholder="https://linkedin.com/in/username"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">GitHub Profile URL</label>
+                  <input
+                    type="text"
+                    value={formData.githubUrl || ''}
+                    onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
+                    placeholder="https://github.com/username"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">Bio / Career Pitch</label>
                 <textarea

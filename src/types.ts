@@ -455,14 +455,16 @@ export interface AssignmentItem {
   id: string;
   title: string;
   courseOrTopic: string;
+  courseName?: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
   dueDate: string;
-  status: 'Pending' | 'Submitted' | 'Graded' | 'Overdue';
+  status: 'Pending' | 'In Progress' | 'Submitted' | 'Graded' | 'Overdue';
   score?: number;
   maxScore: number;
   skillsTested: string[];
   description: string;
   deliverables: string[];
+  rubricCriteria?: string[];
   feedback?: string;
 }
 

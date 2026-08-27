@@ -19,6 +19,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
   const [degree, setDegree] = useState(user?.degree || 'B.Tech Computer Science');
   const [gradYear, setGradYear] = useState(user?.gradYear || '2026');
   const [targetRole, setTargetRole] = useState(user?.targetRole || 'Full Stack Developer');
+  const [linkedinUrl, setLinkedinUrl] = useState(user?.linkedinUrl || '');
+  const [githubUrl, setGithubUrl] = useState(user?.githubUrl || '');
+  const [urlErrors, setUrlErrors] = useState<{ linkedin?: string; github?: string }>({});
   const [selectedSkills, setSelectedSkills] = useState<string[]>([
     'HTML',
     'CSS',
@@ -26,6 +29,58 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
     'Git',
   ]);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
+
+  const formatAndValidateUrl = (url: string, type: 'linkedin' | 'github'): { isValid: boolean; formatted: string; error?: string } => {
+    const trimmed = url.trim();
+    if (!trimmed) {
+      return { isValid: true, formatted: '' };
+    }
+
+    let formatted = trimmed;
+    if (!/^https?:\/\//i.test(formatted)) {
+      formatted = `https://${formatted}`;
+    }
+
+    try {
+      const parsed = new URL(formatted);
+      if (type === 'linkedin') {
+        if (!parsed.hostname.includes('linkedin.com')) {
+          return { isValid: false, formatted, error: 'Please enter a valid LinkedIn URL (e.g. linkedin.com/in/username)' };
+        }
+      } else if (type === 'github') {
+        if (!parsed.hostname.includes('github.com')) {
+          return { isValid: false, formatted, error: 'Please enter a valid GitHub URL (e.g. github.com/username)' };
+        }
+      }
+      return { isValid: true, formatted };
+    } catch {
+      return { isValid: false, formatted, error: `Invalid ${type === 'linkedin' ? 'LinkedIn' : 'GitHub'} URL format` };
+    }
+  };
+
+  const handleStep2Continue = () => {
+    const linkedinValidation = formatAndValidateUrl(linkedinUrl, 'linkedin');
+    const githubValidation = formatAndValidateUrl(githubUrl, 'github');
+
+    const newErrors: { linkedin?: string; github?: string } = {};
+    if (!linkedinValidation.isValid) newErrors.linkedin = linkedinValidation.error;
+    if (!githubValidation.isValid) newErrors.github = githubValidation.error;
+
+    if (Object.keys(newErrors).length > 0) {
+      setUrlErrors(newErrors);
+      return;
+    }
+
+    setUrlErrors({});
+    if (linkedinValidation.formatted) setLinkedinUrl(linkedinValidation.formatted);
+    if (githubValidation.formatted) setGithubUrl(githubValidation.formatted);
+    setStep(3);
+  };
+
+  const handleStep2Skip = () => {
+    setUrlErrors({});
+    setStep(3);
+  };
 
   const availableSkills = [
     'HTML',
@@ -89,6 +144,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         degree,
         gradYear,
         targetRole,
+        linkedinUrl: linkedinUrl.trim() || undefined,
+        githubUrl: githubUrl.trim() || undefined,
         overallReadiness: 72,
         matchedSkillsCount: selectedSkills.length,
       });
@@ -228,15 +285,76 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             ))}
           </div>
 
-          <div className="flex gap-3 pt-3">
+          {/* Optional Profile Links */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-[12px] font-bold text-[#434655] dark:text-[#c3c6d7] flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px] text-blue-600 dark:text-blue-400">link</span>
+                Professional Links <span className="text-[11px] font-normal text-slate-400">(Optional)</span>
+              </label>
+              <span className="text-[11px] text-slate-400">Add now or skip</span>
+            </div>
+
+            <div className="space-y-2.5">
+              <div>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-slate-400 text-xs font-bold select-none">in/</span>
+                  <input
+                    type="text"
+                    value={linkedinUrl}
+                    onChange={(e) => {
+                      setLinkedinUrl(e.target.value);
+                      if (urlErrors.linkedin) setUrlErrors((prev) => ({ ...prev, linkedin: undefined }));
+                    }}
+                    placeholder="https://linkedin.com/in/username (Optional)"
+                    className={`w-full bg-[#f9f9ff] dark:bg-slate-800 rounded-xl py-2.5 pl-9 pr-3 text-[13px] text-[#121b2e] dark:text-white neu-inset outline-none ${
+                      urlErrors.linkedin ? 'border border-red-500' : ''
+                    }`}
+                  />
+                </div>
+                {urlErrors.linkedin && (
+                  <p className="text-[11px] text-red-500 font-medium mt-1 pl-1">{urlErrors.linkedin}</p>
+                )}
+              </div>
+
+              <div>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3 text-slate-400 text-xs font-bold select-none">gh/</span>
+                  <input
+                    type="text"
+                    value={githubUrl}
+                    onChange={(e) => {
+                      setGithubUrl(e.target.value);
+                      if (urlErrors.github) setUrlErrors((prev) => ({ ...prev, github: undefined }));
+                    }}
+                    placeholder="https://github.com/username (Optional)"
+                    className={`w-full bg-[#f9f9ff] dark:bg-slate-800 rounded-xl py-2.5 pl-9 pr-3 text-[13px] text-[#121b2e] dark:text-white neu-inset outline-none ${
+                      urlErrors.github ? 'border border-red-500' : ''
+                    }`}
+                  />
+                </div>
+                {urlErrors.github && (
+                  <p className="text-[11px] text-red-500 font-medium mt-1 pl-1">{urlErrors.github}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 pt-3">
             <button
               onClick={() => setStep(1)}
-              className="py-3 px-5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-bold text-[#434655] dark:text-[#c3c6d7] cursor-pointer"
+              className="py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-bold text-[#434655] dark:text-[#c3c6d7] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               Back
             </button>
             <button
-              onClick={() => setStep(3)}
+              onClick={handleStep2Skip}
+              className="py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+              Skip
+            </button>
+            <button
+              onClick={handleStep2Continue}
               className="neu-btn-primary flex-1 py-3 rounded-xl text-[14px] font-bold cursor-pointer"
             >
               Select Your Skills →

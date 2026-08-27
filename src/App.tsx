@@ -298,7 +298,7 @@ export default function App() {
         {/* 12. Assignments */}
         {currentView === 'assignments' && (
           <div className="pt-20 md:pt-24 pb-24">
-            <AssignmentsView onNavigate={handleNavigate} />
+            <AssignmentsView user={user} onNavigate={handleNavigate} />
           </div>
         )}
 

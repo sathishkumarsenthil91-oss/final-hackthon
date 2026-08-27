@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CourseItem, CourseLesson, CourseModule, UserProfile } from '../types';
 import { downloadFileToFolder } from '../services/youtubeLearningService';
+import { YouTubePlayer } from './YouTubePlayer';
 
 interface CoursePlayerModalProps {
   course: CourseItem;
@@ -204,12 +205,11 @@ export const CoursePlayerModal: React.FC<CoursePlayerModalProps> = ({
             {/* Embedded Lesson Video Player */}
             <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-lg border border-slate-800 shrink-0">
               {activeLesson.videoId ? (
-                <iframe
-                  src={`https://www.youtube.com/embed/${activeLesson.videoId}?autoplay=1&rel=0&modestbranding=1`}
+                <YouTubePlayer
+                  videoId={activeLesson.videoId}
                   title={activeLesson.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full border-0"
+                  autoPlay={true}
+                  className="w-full h-full"
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-indigo-950 text-white p-6 text-center space-y-3">

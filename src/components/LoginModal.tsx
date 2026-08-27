@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ViewType, UserProfile } from '../types';
 import { LOGO_URL } from '../data/mockData';
 import { GoogleLogo } from './GoogleLogo';
+import { supabase } from '../supabaseClient';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -29,51 +30,135 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [regRole, setRegRole] = useState('Full Stack Developer');
   const [regPassword, setRegPassword] = useState('');
 
+  // Error & loading state
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
   if (!isOpen) return null;
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
     const email = loginEmail.trim().toLowerCase();
-    if (!email) return;
-
-    let savedProfile: any = null;
-    try {
-      const raw = localStorage.getItem(`industryskill_profile_${email}`);
-      if (raw) savedProfile = JSON.parse(raw);
-    } catch (err) {
-      console.error(err);
+    const password = loginPassword;
+    if (!email || !password) {
+      setErrorMessage('Please enter both email and password.');
+      return;
     }
 
-    const inferredName = savedProfile?.name || email.split('@')[0].split(/[._-]/).map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
-    onLoginSuccess(inferredName, email, savedProfile || undefined);
-    onClose();
-    onNavigate('dashboard');
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setErrorMessage(error.message);
+        setIsLoading(false);
+        return;
+      }
+
+      let savedProfile: any = null;
+      try {
+        const raw = localStorage.getItem(`industryskill_profile_${email}`);
+        if (raw) savedProfile = JSON.parse(raw);
+      } catch (err) {
+        console.error(err);
+      }
+
+      const userMeta = data?.user?.user_metadata || {};
+      const inferredName =
+        userMeta.full_name ||
+        userMeta.name ||
+        savedProfile?.name ||
+        email
+          .split('@')[0]
+          .split(/[._-]/)
+          .map((s: string) => s.charAt(0).toUpperCase() + s.slice(1))
+          .join(' ');
+
+      onLoginSuccess(inferredName, email, {
+        ...savedProfile,
+        name: inferredName,
+        email: email,
+        college: userMeta.college || savedProfile?.college,
+        targetRole: userMeta.target_role || savedProfile?.targetRole,
+      });
+
+      onClose();
+      // Redirect user to Home page ("/")
+      window.history.pushState({}, '', '/');
+      onNavigate('dashboard');
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to sign in.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
     const name = regName.trim();
     const email = regEmail.trim().toLowerCase();
-    if (!name || !email) return;
+    const password = regPassword;
 
-    const newProfileData: Partial<UserProfile> = {
-      name,
-      email,
-      college: regCollege.trim() || 'University Institute of Technology',
-      targetRole: regRole,
-      degree: 'B.Tech / Bachelor of Science',
-      gradYear: '2026',
-    };
-
-    try {
-      localStorage.setItem(`industryskill_profile_${email}`, JSON.stringify(newProfileData));
-    } catch (err) {
-      console.error(err);
+    if (!name || !email || !password) {
+      setErrorMessage('Please fill out all required fields.');
+      return;
     }
 
-    onLoginSuccess(name, email, newProfileData);
-    onClose();
-    onNavigate('onboarding');
+    if (password.length < 6) {
+      setErrorMessage('Password must be at least 6 characters.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+            college: regCollege.trim() || 'University Institute of Technology',
+            target_role: regRole,
+          },
+        },
+      });
+
+      if (error) {
+        setErrorMessage(error.message);
+        setIsLoading(false);
+        return;
+      }
+
+      const newProfileData: Partial<UserProfile> = {
+        name,
+        email,
+        college: regCollege.trim() || 'University Institute of Technology',
+        targetRole: regRole,
+        degree: 'B.Tech / Bachelor of Science',
+        gradYear: '2026',
+      };
+
+      try {
+        localStorage.setItem(`industryskill_profile_${email}`, JSON.stringify(newProfileData));
+      } catch (err) {
+        console.error(err);
+      }
+
+      onLoginSuccess(name, email, newProfileData);
+      onClose();
+      // Redirect user to Home page ("/")
+      window.history.pushState({}, '', '/');
+      onNavigate('dashboard');
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to register.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleSignIn = () => {
@@ -184,10 +269,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
             <button
               type="submit"
-              className="neu-btn-primary w-full py-3 rounded-xl text-[14px] font-bold cursor-pointer mt-1"
+              disabled={isLoading}
+              className="neu-btn-primary w-full py-3 rounded-xl text-[14px] font-bold cursor-pointer mt-1 flex items-center justify-center gap-2"
             >
-              Sign In
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
+
+            {errorMessage && (
+              <p className="text-red-500 dark:text-red-400 text-xs text-center font-medium mt-2">
+                {errorMessage}
+              </p>
+            )}
           </form>
         ) : (
           /* Register Form */
@@ -266,10 +358,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
             <button
               type="submit"
-              className="neu-btn-primary w-full py-3 rounded-xl text-[14px] font-bold cursor-pointer mt-1"
+              disabled={isLoading}
+              className="neu-btn-primary w-full py-3 rounded-xl text-[14px] font-bold cursor-pointer mt-1 flex items-center justify-center gap-2"
             >
-              Create Account
+              {isLoading ? 'Creating account...' : 'Create Account'}
             </button>
+
+            {errorMessage && (
+              <p className="text-red-500 dark:text-red-400 text-xs text-center font-medium mt-2">
+                {errorMessage}
+              </p>
+            )}
           </form>
         )}
 

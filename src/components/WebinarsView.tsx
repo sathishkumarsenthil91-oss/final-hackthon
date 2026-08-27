@@ -4,6 +4,7 @@ import { initialWebinars } from '../data/mockData';
 import { WebinarCertificateModal } from './WebinarCertificateModal';
 import { CertificateGenerationModal } from './CertificateGenerationModal';
 import { extractYouTubeVideoId } from '../services/youtubeLearningService';
+import { YouTubePlayer } from './YouTubePlayer';
 
 interface WebinarsViewProps {
   user: UserProfile;
@@ -543,12 +544,11 @@ export const WebinarsView: React.FC<WebinarsViewProps> = ({
 
             <div className="p-4 sm:p-6 space-y-4">
               <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-lg border border-slate-800">
-                <iframe
-                  src={`https://www.youtube.com/embed/${activePlayerWebinar.youtubeVideoId}?autoplay=1&rel=0&modestbranding=1`}
+                <YouTubePlayer
+                  videoId={activePlayerWebinar.youtubeVideoId || ''}
                   title={activePlayerWebinar.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full border-0"
+                  autoPlay={true}
+                  className="w-full h-full"
                 />
               </div>
 

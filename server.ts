@@ -783,6 +783,126 @@ Produce a detailed learning pathway containing:
   }
 });
 
+// 5. YouTube Video Metadata Proxy Endpoint (supports optional YOUTUBE_API_KEY with oEmbed fallback)
+app.post('/api/youtube/metadata', async (req, res) => {
+  try {
+    const { videoId, url } = req.body;
+    let targetVideoId = videoId;
+
+    if (!targetVideoId && url) {
+      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+      if (match) targetVideoId = match[1];
+    }
+
+    if (!targetVideoId) {
+      return res.status(400).json({ error: 'Valid YouTube video ID or URL required' });
+    }
+
+    const fallback = {
+      title: `YouTube Technical Lab (${targetVideoId})`,
+      channel: 'YouTube Creator',
+      channelUrl: `https://www.youtube.com/watch?v=${targetVideoId}`,
+      thumbnail: `https://img.youtube.com/vi/${targetVideoId}/hqdefault.jpg`,
+      durationSeconds: 1200,
+      durationFormatted: '20m 00s',
+    };
+
+    // Tier 1: If YouTube API Key is available, query official YouTube Data API v3
+    const ytApiKey = process.env.YOUTUBE_API_KEY || process.env.GEMINI_API_KEY;
+    if (ytApiKey) {
+      try {
+        const ytRes = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${targetVideoId}&key=${ytApiKey}`
+        );
+        if (ytRes.ok) {
+          const ytData = await ytRes.json();
+          if (ytData.items && ytData.items.length > 0) {
+            const item = ytData.items[0];
+            const snippet = item.snippet;
+            const contentDetails = item.contentDetails;
+
+            // Parse ISO 8601 duration (PT1H2M10S -> seconds)
+            let durationSeconds = 1200;
+            if (contentDetails?.duration) {
+              const durMatch = contentDetails.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+              if (durMatch) {
+                const hours = parseInt(durMatch[1] || '0', 10);
+                const minutes = parseInt(durMatch[2] || '0', 10);
+                const seconds = parseInt(durMatch[3] || '0', 10);
+                durationSeconds = hours * 3600 + minutes * 60 + seconds;
+              }
+            }
+
+            const hrs = Math.floor(durationSeconds / 3600);
+            const mins = Math.floor((durationSeconds % 3600) / 60);
+            const secs = durationSeconds % 60;
+            const durationFormatted =
+              hrs > 0
+                ? `${hrs}h ${mins.toString().padStart(2, '0')}m`
+                : `${mins}m ${secs.toString().padStart(2, '0')}s`;
+
+            return res.json({
+              title: snippet.title || fallback.title,
+              channel: snippet.channelTitle || fallback.channel,
+              channelUrl: snippet.channelId ? `https://www.youtube.com/channel/${snippet.channelId}` : fallback.channelUrl,
+              thumbnail: snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || fallback.thumbnail,
+              durationSeconds,
+              durationFormatted,
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('YouTube Data API fetch failed, trying oEmbed:', e);
+      }
+    }
+
+    // Tier 2: Official YouTube oEmbed service
+    try {
+      const oembedRes = await fetch(
+        `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${targetVideoId}&format=json`
+      );
+      if (oembedRes.ok) {
+        const oembedData = await oembedRes.json();
+        return res.json({
+          title: oembedData.title || fallback.title,
+          channel: oembedData.author_name || fallback.channel,
+          channelUrl: oembedData.author_url || fallback.channelUrl,
+          thumbnail: oembedData.thumbnail_url || fallback.thumbnail,
+          durationSeconds: 1200,
+          durationFormatted: '20m 00s',
+        });
+      }
+    } catch (e) {
+      console.warn('YouTube oEmbed fetch failed, trying noembed:', e);
+    }
+
+    // Tier 3: NoEmbed fallback
+    try {
+      const noembedRes = await fetch(
+        `https://noembed.com/embed?url=https://www.youtube.com/watch?v=${targetVideoId}`
+      );
+      if (noembedRes.ok) {
+        const noembedData = await noembedRes.json();
+        return res.json({
+          title: noembedData.title || fallback.title,
+          channel: noembedData.author_name || fallback.channel,
+          channelUrl: noembedData.author_url || fallback.channelUrl,
+          thumbnail: noembedData.thumbnail_url || fallback.thumbnail,
+          durationSeconds: 1200,
+          durationFormatted: '20m 00s',
+        });
+      }
+    } catch (e) {
+      // Fall through to default
+    }
+
+    return res.json(fallback);
+  } catch (error: any) {
+    console.error('Error in /api/youtube/metadata:', error);
+    res.status(500).json({ error: 'Failed to fetch YouTube metadata' });
+  }
+});
+
 // Vite middleware for development & static serving for production
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {

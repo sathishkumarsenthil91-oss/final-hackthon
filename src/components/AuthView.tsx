@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ViewType, UserProfile } from '../types';
 import { LOGO_URL } from '../data/mockData';
 import { GoogleLogo } from './GoogleLogo';
+import { supabase } from '../supabaseClient';
 
 interface AuthViewProps {
   onLoginSuccess: (name: string, email: string, additionalData?: Partial<UserProfile>) => void;
@@ -35,27 +36,48 @@ export const AuthView: React.FC<AuthViewProps> = ({
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(true);
 
-  // Notification / error state
+  // Notification / error / success state
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setSuccessMessage('');
     const email = loginEmail.trim().toLowerCase();
+    const password = loginPassword;
+
     if (!email) {
       setErrorMessage('Please enter your email address.');
       return;
     }
-    if (!loginPassword) {
+    if (!password) {
       setErrorMessage('Please enter your password.');
       return;
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      // Retrieve stored user profile if available, or generate dynamic profile from email
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setErrorMessage(error.message);
+        setIsLoading(false);
+        return;
+      }
+
+      // Ensure a real session exists
+      if (!data?.session) {
+        setErrorMessage('Check your email and confirm your account before logging in.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Retrieve stored user profile if available, or generate dynamic profile from metadata/email
       let savedProfile: any = null;
       try {
         const raw = localStorage.getItem(`industryskill_profile_${email}`);
@@ -64,17 +86,42 @@ export const AuthView: React.FC<AuthViewProps> = ({
         console.error(err);
       }
 
-      const inferredName = savedProfile?.name || email.split('@')[0].split(/[._-]/).map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
-      onLoginSuccess(inferredName, email, savedProfile || undefined);
+      const userMeta = data?.user?.user_metadata || {};
+      const inferredName =
+        userMeta.full_name ||
+        userMeta.name ||
+        savedProfile?.name ||
+        email
+          .split('@')[0]
+          .split(/[._-]/)
+          .map((s: string) => s.charAt(0).toUpperCase() + s.slice(1))
+          .join(' ');
+
+      onLoginSuccess(inferredName, email, {
+        ...savedProfile,
+        name: inferredName,
+        email: email,
+        college: userMeta.college || savedProfile?.college,
+        targetRole: userMeta.target_role || savedProfile?.targetRole,
+      });
+
+      // Redirect user to Home page ("/")
+      window.history.pushState({}, '', '/');
       onNavigate('dashboard');
-    }, 400);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to sign in. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setSuccessMessage('');
     const name = regName.trim();
     const email = regEmail.trim().toLowerCase();
+    const password = regPassword;
 
     if (!name) {
       setErrorMessage('Please enter your full name.');
@@ -84,11 +131,11 @@ export const AuthView: React.FC<AuthViewProps> = ({
       setErrorMessage('Please enter a valid university or personal email.');
       return;
     }
-    if (regPassword.length < 6) {
+    if (password.length < 6) {
       setErrorMessage('Password must be at least 6 characters.');
       return;
     }
-    if (regPassword !== regConfirmPassword) {
+    if (password !== regConfirmPassword) {
       setErrorMessage('Passwords do not match.');
       return;
     }
@@ -98,8 +145,32 @@ export const AuthView: React.FC<AuthViewProps> = ({
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+            college: regCollege.trim() || 'University Institute of Technology',
+            target_role: regRole,
+          },
+        },
+      });
+
+      if (error) {
+        setErrorMessage(error.message);
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if session is null (email confirmation required)
+      if (!data?.session) {
+        setSuccessMessage('Check your email and confirm your account before logging in.');
+        setIsLoading(false);
+        return;
+      }
+
       const newProfileData: Partial<UserProfile> = {
         name,
         email,
@@ -108,16 +179,24 @@ export const AuthView: React.FC<AuthViewProps> = ({
         degree: 'B.Tech / Bachelor of Science',
         gradYear: '2026',
       };
-      
+
       try {
         localStorage.setItem(`industryskill_profile_${email}`, JSON.stringify(newProfileData));
       } catch (err) {
         console.error(err);
       }
 
+      // Only redirect when a real session exists
       onLoginSuccess(name, email, newProfileData);
-      onNavigate('onboarding');
-    }, 450);
+
+      // Redirect user to Home page ("/")
+      window.history.pushState({}, '', '/');
+      onNavigate('dashboard');
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to sign up. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleAuth = () => {
@@ -209,6 +288,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
               onClick={() => {
                 setAuthMode('login');
                 setErrorMessage('');
+                setSuccessMessage('');
               }}
               className={`py-2.5 rounded-xl text-[13px] sm:text-[14px] font-bold transition-all cursor-pointer ${
                 authMode === 'login'
@@ -223,6 +303,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
               onClick={() => {
                 setAuthMode('register');
                 setErrorMessage('');
+                setSuccessMessage('');
               }}
               className={`py-2.5 rounded-xl text-[13px] sm:text-[14px] font-bold transition-all cursor-pointer ${
                 authMode === 'register'
@@ -336,6 +417,12 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   </>
                 )}
               </button>
+
+              {errorMessage && (
+                <p className="text-red-500 dark:text-red-400 text-xs text-center font-medium mt-2">
+                  {errorMessage}
+                </p>
+              )}
             </form>
           ) : (
             /* ================= REGISTER FORM ================= */
@@ -458,6 +545,12 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   </>
                 )}
               </button>
+
+              {errorMessage && (
+                <p className="text-red-500 dark:text-red-400 text-xs text-center font-medium mt-2">
+                  {errorMessage}
+                </p>
+              )}
             </form>
           )}
 

@@ -77,12 +77,23 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
     initialStartSecondsRef.current = Math.max(0, Math.floor(track.currentTime || 0));
   }
 
+  const originParam = useMemo(() => {
+    if (typeof window !== 'undefined' && window.location && window.location.origin) {
+      try {
+        return `&origin=${encodeURIComponent(window.location.origin)}`;
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  }, []);
+
   const embedSrc = useMemo(() => {
     const vid = initialVideoIdRef.current;
     const startSec = initialStartSecondsRef.current;
     const startParam = startSec > 0 ? `&start=${startSec}` : '';
-    return `https://www.youtube.com/embed/${vid}?enablejsapi=1&autoplay=1${startParam}&rel=0&modestbranding=1&playsinline=1`;
-  }, [track.videoId]);
+    return `https://www.youtube-nocookie.com/embed/${vid}?enablejsapi=1&autoplay=1${startParam}&rel=0&modestbranding=1&playsinline=1${originParam}`;
+  }, [track.videoId, originParam]);
 
   // Timeline Scrubbing & Mouse Drag state
   const [isScrubbing, setIsScrubbing] = useState<boolean>(false);
@@ -631,6 +642,7 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
                 onLoad={handleIframeLoad}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                 allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
                 className="w-full h-full border-0"
               />
 

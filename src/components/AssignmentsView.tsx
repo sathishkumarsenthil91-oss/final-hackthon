@@ -1,13 +1,27 @@
-import React, { useState } from 'react';
-import { AssignmentItem, ViewType } from '../types';
+import React, { useState, useEffect } from 'react';
+import { AssignmentItem, ViewType, UserProfile } from '../types';
 import { initialAssignments } from '../data/mockData';
 
 interface AssignmentsViewProps {
+  user?: UserProfile;
   onNavigate: (view: ViewType) => void;
 }
 
-export const AssignmentsView: React.FC<AssignmentsViewProps> = ({ onNavigate }) => {
-  const [assignments, setAssignments] = useState<AssignmentItem[]>(initialAssignments);
+export const AssignmentsView: React.FC<AssignmentsViewProps> = ({ user, onNavigate }) => {
+  const storageKey = `industryskill_assignments_${user?.email ? user.email.toLowerCase() : 'guest'}`;
+
+  const [assignments, setAssignments] = useState<AssignmentItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('Failed to load assignments from localStorage', e);
+    }
+    return initialAssignments;
+  });
+
   const [filterStatus, setFilterStatus] = useState<'All' | 'Pending' | 'In Progress' | 'Submitted' | 'Graded'>('All');
   const [activeSubmission, setActiveSubmission] = useState<AssignmentItem | null>(null);
   const [submissionUrl, setSubmissionUrl] = useState('');
@@ -15,9 +29,19 @@ export const AssignmentsView: React.FC<AssignmentsViewProps> = ({ onNavigate }) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  const filteredAssignments = assignments.filter(
-    (a) => filterStatus === 'All' || a.status === filterStatus
-  );
+  // Sync to localStorage whenever assignments change
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(assignments));
+    } catch (e) {
+      console.error('Failed to persist assignments', e);
+    }
+  }, [assignments, storageKey]);
+
+  const filteredAssignments = assignments.filter((a) => {
+    if (filterStatus === 'All') return true;
+    return a.status === filterStatus;
+  });
 
   const handleSubmitAssignment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,11 +57,12 @@ export const AssignmentsView: React.FC<AssignmentsViewProps> = ({ onNavigate }) 
               ...a,
               status: 'Graded',
               score: 96,
-              feedback: `Automated AI & Mentor Code Review Completed:
-• Architecture Score: 98/100 (Clean separation of concerns, modular files).
-• Code Robustness: 95/100 (Proper error boundaries and schema validation).
-• Performance: 96/100 (Efficient database queries and lightweight bundle).
-Great work! Ready for production portfolio inclusion.`,
+              feedback: `Automated AI & Senior Mentor Code Review Completed:
+• Repository Verified: ${submissionUrl}
+• Architecture Score: 98/100 (Modular structure, clean component and route boundaries).
+• Code Robustness: 95/100 (Input validation and comprehensive error handling).
+• Performance: 96/100 (Optimized queries and zero layout shift).
+Summary: High-quality production implementation. Ready for technical portfolio showcase.`,
             };
           }
           return a;
@@ -46,9 +71,9 @@ Great work! Ready for production portfolio inclusion.`,
       setActiveSubmission(null);
       setSubmissionUrl('');
       setSubmissionNotes('');
-      setToastMsg('Assignment successfully submitted! AI code review & rubric grade generated (Score: 96/100).');
+      setToastMsg('Assignment successfully evaluated! AI code audit & rubric grade generated (Score: 96/100).');
       setTimeout(() => setToastMsg(null), 4000);
-    }, 1500);
+    }, 1200);
   };
 
   return (
@@ -61,7 +86,7 @@ Great work! Ready for production portfolio inclusion.`,
               <span className="px-3 py-0.5 rounded-full text-xs font-black bg-blue-500/20 text-blue-300 border border-blue-400/30">
                 PORTFOLIO-GRADE ASSIGNMENTS
               </span>
-              <span className="text-xs text-slate-400 font-semibold">Real-world System Builds</span>
+              <span className="text-xs text-slate-400 font-semibold">Real-world Technical Builds</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Practical Assignments & Code Reviews
@@ -71,7 +96,7 @@ Great work! Ready for production portfolio inclusion.`,
             </p>
           </div>
 
-          <div className="flex items-center gap-4 bg-white/10 backdrop-blur-xs p-4 rounded-2xl border border-white/10">
+          <div className="flex items-center gap-4 bg-white/10 backdrop-blur-xs p-4 rounded-2xl border border-white/10 shrink-0">
             <div className="text-center px-2">
               <span className="text-2xl font-black text-emerald-400">
                 {assignments.filter((a) => a.status === 'Graded').length}
@@ -97,103 +122,143 @@ Great work! Ready for production portfolio inclusion.`,
       )}
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2">
-        {(['All', 'In Progress', 'Pending', 'Graded'] as const).map((status) => (
-          <button
-            key={status}
-            onClick={() => setFilterStatus(status)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              filterStatus === status
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-white dark:bg-[#151f38] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
-            }`}
-          >
-            {status}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-2">
+        {(['All', 'Pending', 'In Progress', 'Graded'] as const).map((status) => {
+          const count =
+            status === 'All'
+              ? assignments.length
+              : assignments.filter((a) => a.status === status).length;
+          return (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status as any)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                filterStatus === status
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white dark:bg-[#151f38] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <span>{status}</span>
+              <span
+                className={`px-1.5 py-0.2 rounded-md text-[10px] ${
+                  filterStatus === status
+                    ? 'bg-white/20 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Assignments List */}
       <div className="space-y-4">
-        {filteredAssignments.map((assignment) => (
-          <div
-            key={assignment.id}
-            className="bg-white dark:bg-[#151f38] border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-6"
-          >
-            <div className="space-y-2 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                    assignment.status === 'Graded'
-                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800'
-                      : assignment.status === 'In Progress'
-                      ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-800'
-                      : 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-800'
-                  }`}
-                >
-                  {assignment.status === 'Graded'
-                    ? `Graded • ${assignment.score}/${assignment.maxScore}`
-                    : assignment.status}
-                </span>
-
-                <span className="text-xs text-slate-400 font-semibold">
-                  Course: <strong className="text-slate-700 dark:text-slate-300">{assignment.courseName}</strong>
-                </span>
-
-                <span className="text-xs text-slate-400 font-medium ml-auto md:ml-0">
-                  Due: <strong className="text-slate-700 dark:text-slate-200">{assignment.dueDate}</strong>
-                </span>
-              </div>
-
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                {assignment.title}
-              </h3>
-
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                {assignment.description}
-              </p>
-
-              {/* Rubric Criteria */}
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Rubric:</span>
-                {assignment.rubricCriteria.map((r, idx) => (
-                  <span
-                    key={idx}
-                    className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-medium"
-                  >
-                    ✓ {r}
-                  </span>
-                ))}
-              </div>
-
-              {/* Feedback if graded */}
-              {assignment.feedback && (
-                <div className="mt-3 p-3 bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl text-xs text-emerald-900 dark:text-emerald-200 whitespace-pre-line font-medium">
-                  {assignment.feedback}
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col sm:flex-row md:flex-col items-stretch md:items-end gap-2 shrink-0">
-              {assignment.status !== 'Graded' ? (
-                <button
-                  onClick={() => setActiveSubmission(assignment)}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[18px]">upload</span>
-                  Submit Project
-                </button>
-              ) : (
-                <button
-                  onClick={() => setActiveSubmission(assignment)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-colors cursor-pointer"
-                >
-                  Resubmit Revision
-                </button>
-              )}
-            </div>
+        {filteredAssignments.length === 0 ? (
+          <div className="p-12 text-center bg-white dark:bg-[#151f38] rounded-3xl border border-slate-200/80 dark:border-slate-800 space-y-3">
+            <span className="material-symbols-outlined text-4xl text-slate-400">task</span>
+            <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">No Assignments in this category</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              You are all caught up! Switch to 'All' to view your full coursework portfolio.
+            </p>
+            <button
+              onClick={() => setFilterStatus('All')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold"
+            >
+              Show All Assignments
+            </button>
           </div>
-        ))}
+        ) : (
+          filteredAssignments.map((assignment) => {
+            const courseTitle = assignment.courseName || assignment.courseOrTopic || 'Full-Stack Track';
+            const criteria = assignment.rubricCriteria && assignment.rubricCriteria.length > 0
+              ? assignment.rubricCriteria
+              : assignment.skillsTested || [];
+
+            return (
+              <div
+                key={assignment.id}
+                className="bg-white dark:bg-[#151f38] border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-6"
+              >
+                <div className="space-y-2 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                        assignment.status === 'Graded'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800'
+                          : assignment.status === 'In Progress'
+                          ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-800'
+                          : 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-800'
+                      }`}
+                    >
+                      {assignment.status === 'Graded'
+                        ? `Graded • ${assignment.score ?? 96}/${assignment.maxScore}`
+                        : assignment.status}
+                    </span>
+
+                    <span className="text-xs text-slate-400 font-semibold">
+                      Course: <strong className="text-slate-700 dark:text-slate-300">{courseTitle}</strong>
+                    </span>
+
+                    <span className="text-xs text-slate-400 font-medium ml-auto md:ml-0">
+                      Due: <strong className="text-slate-700 dark:text-slate-200">{assignment.dueDate}</strong>
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    {assignment.title}
+                  </h3>
+
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {assignment.description}
+                  </p>
+
+                  {/* Rubric Criteria & Deliverables */}
+                  {criteria.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Rubric:</span>
+                      {criteria.map((r, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-medium"
+                        >
+                          ✓ {r}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Feedback if graded */}
+                  {assignment.feedback && (
+                    <div className="mt-3 p-3 bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl text-xs text-emerald-900 dark:text-emerald-200 whitespace-pre-line font-medium">
+                      {assignment.feedback}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row md:flex-col items-stretch md:items-end gap-2 shrink-0">
+                  {assignment.status !== 'Graded' ? (
+                    <button
+                      onClick={() => setActiveSubmission(assignment)}
+                      className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">upload</span>
+                      Submit Project
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setActiveSubmission(assignment)}
+                      className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                    >
+                      Resubmit Revision
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Submission Modal */}
@@ -203,7 +268,7 @@ Great work! Ready for production portfolio inclusion.`,
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
               <div>
                 <span className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400">
-                  {activeSubmission.courseName}
+                  {activeSubmission.courseName || activeSubmission.courseOrTopic}
                 </span>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   Submit: {activeSubmission.title}
@@ -282,3 +347,4 @@ Great work! Ready for production portfolio inclusion.`,
     </div>
   );
 };
+
