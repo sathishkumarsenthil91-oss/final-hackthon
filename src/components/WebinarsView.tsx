@@ -3,6 +3,7 @@ import { WebinarItem, ViewType, UserProfile, WebinarCertificate, GeneratedCertif
 import { initialWebinars } from '../data/mockData';
 import { WebinarCertificateModal } from './WebinarCertificateModal';
 import { CertificateGenerationModal } from './CertificateGenerationModal';
+import { extractYouTubeVideoId } from '../services/youtubeLearningService';
 
 interface WebinarsViewProps {
   user: UserProfile;
@@ -15,13 +16,55 @@ export const WebinarsView: React.FC<WebinarsViewProps> = ({
   onNavigate,
   onUpdateUser,
 }) => {
-  const [webinars, setWebinars] = useState<WebinarItem[]>(initialWebinars);
+  const [webinars, setWebinars] = useState<WebinarItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(`industryskill_webinars_${user.email || 'guest'}`);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      // Fallback
+    }
+    return initialWebinars;
+  });
   const [filterType, setFilterType] = useState<'All' | 'Upcoming' | 'Live' | 'Recorded'>('All');
   const [selectedWebinar, setSelectedWebinar] = useState<WebinarItem | null>(null);
   const [activePlayerWebinar, setActivePlayerWebinar] = useState<WebinarItem | null>(null);
   const [certificateWebinar, setCertificateWebinar] = useState<WebinarItem | null>(null);
+  const [showHostModal, setShowHostModal] = useState<boolean>(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Host Webinar Form State
+  const [hostForm, setHostForm] = useState({
+    title: '',
+    category: 'System Architecture',
+    status: 'Live' as 'Live' | 'Upcoming' | 'Recorded',
+    dateTime: 'Today, Live Interactive',
+    duration: '60 min',
+    speakerName: user.name || 'Technical Leader',
+    speakerRole: user.title || 'Senior Software Engineer',
+    speakerCompany: user.currentRole || 'ScaleTech',
+    speakerAvatar: user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    platformType: 'both' as 'zoom' | 'youtube' | 'both',
+    zoomMeetingId: '849 2039 1192',
+    zoomPasscode: 'LIVE2025',
+    zoomMeetingUrl: 'https://zoom.us/j/84920391192',
+    youtubeUrl: 'https://www.youtube.com/watch?v=8pDqJVdNa44',
+    description: '',
+    keyTakeawaysText: 'Real-time production architectures\nHands-on debugging best practices\nIndustry verified certificate of completion',
+    thumbnail: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80',
+  });
+  const [hostError, setHostError] = useState<string>('');
+
+  const saveWebinars = (updated: WebinarItem[]) => {
+    setWebinars(updated);
+    try {
+      localStorage.setItem(`industryskill_webinars_${user.email || 'guest'}`, JSON.stringify(updated));
+    } catch (e) {
+      // Storage fallback
+    }
+  };
 
   const filteredWebinars = webinars.filter(
     (w) => filterType === 'All' || w.status === filterType
@@ -33,34 +76,32 @@ export const WebinarsView: React.FC<WebinarsViewProps> = ({
   };
 
   const handleRsvp = (webinarId: string) => {
-    setWebinars((prev) =>
-      prev.map((w) => {
-        if (w.id === webinarId) {
-          const newRegistered = !w.isRegistered;
-          const newCount = newRegistered ? w.attendeesCount + 1 : w.attendeesCount - 1;
-          showToast(newRegistered ? `RSVP Confirmed for "${w.title}"! Zoom link & Calendar invite sent.` : `RSVP Cancelled.`);
-          return { ...w, isRegistered: newRegistered, registered: newRegistered, attendeesCount: newCount };
-        }
-        return w;
-      })
-    );
+    const updated = webinars.map((w) => {
+      if (w.id === webinarId) {
+        const newRegistered = !w.isRegistered;
+        const newCount = newRegistered ? w.attendeesCount + 1 : w.attendeesCount - 1;
+        showToast(newRegistered ? `RSVP Confirmed for "${w.title}"! Zoom link & Calendar invite sent.` : `RSVP Cancelled.`);
+        return { ...w, isRegistered: newRegistered, registered: newRegistered, attendeesCount: newCount };
+      }
+      return w;
+    });
+    saveWebinars(updated);
   };
 
   const handleToggleLike = (webinarId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    setWebinars((prev) =>
-      prev.map((w) => {
-        if (w.id === webinarId) {
-          const nextLiked = !w.isLiked;
-          const nextLikesCount = nextLiked ? (w.likesCount || 0) + 1 : Math.max(0, (w.likesCount || 1) - 1);
-          if (nextLiked) {
-            showToast(`You liked "${w.title}"! ❤️`);
-          }
-          return { ...w, isLiked: nextLiked, likesCount: nextLikesCount };
+    const updated = webinars.map((w) => {
+      if (w.id === webinarId) {
+        const nextLiked = !w.isLiked;
+        const nextLikesCount = nextLiked ? (w.likesCount || 0) + 1 : Math.max(0, (w.likesCount || 1) - 1);
+        if (nextLiked) {
+          showToast(`You liked "${w.title}"! ❤️`);
         }
-        return w;
-      })
-    );
+        return { ...w, isLiked: nextLiked, likesCount: nextLikesCount };
+      }
+      return w;
+    });
+    saveWebinars(updated);
   };
 
   const handleCopyZoomCreds = (meetingId?: string, passcode?: string) => {
@@ -70,6 +111,71 @@ export const WebinarsView: React.FC<WebinarsViewProps> = ({
     setCopiedId(meetingId);
     showToast('Zoom Meeting details copied to clipboard!');
     setTimeout(() => setCopiedId(null), 2500);
+  };
+
+  // Submit new Host Webinar
+  const handleSubmitHostWebinar = (e: React.FormEvent) => {
+    e.preventDefault();
+    setHostError('');
+
+    if (!hostForm.title.trim()) {
+      setHostError('Please enter a webinar or workshop title.');
+      return;
+    }
+
+    let parsedYoutubeId: string | undefined = undefined;
+    if (hostForm.youtubeUrl.trim()) {
+      const vid = extractYouTubeVideoId(hostForm.youtubeUrl);
+      if (vid) {
+        parsedYoutubeId = vid;
+      }
+    }
+
+    const takeaways = hostForm.keyTakeawaysText
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const newWebinar: WebinarItem = {
+      id: `webinar-${Date.now()}`,
+      title: hostForm.title.trim(),
+      speaker: {
+        name: hostForm.speakerName || user.name || 'Staff Mentor',
+        title: hostForm.speakerRole || user.title || 'Technical Specialist',
+        company: hostForm.speakerCompany || user.currentRole || 'ScaleTech',
+        avatar: hostForm.speakerAvatar || user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      },
+      speakerName: hostForm.speakerName || user.name || 'Staff Mentor',
+      speakerRole: hostForm.speakerRole || user.title || 'Technical Specialist',
+      speakerCompany: hostForm.speakerCompany || user.currentRole || 'ScaleTech',
+      speakerAvatar: hostForm.speakerAvatar || user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      dateTime: hostForm.dateTime || 'Live Now',
+      date: hostForm.dateTime || 'Live Now',
+      duration: hostForm.duration || '60m',
+      tags: [hostForm.category, 'Live Interactive', 'Certificate Eligible'],
+      status: hostForm.status,
+      registered: true,
+      isRegistered: true,
+      attendeesCount: 1,
+      likesCount: 12,
+      isLiked: false,
+      category: hostForm.category,
+      description: hostForm.description || `Interactive ${hostForm.category} technical session hosted by ${hostForm.speakerName}. Includes live architecture review, Q&A, and verifiable certificate of participation.`,
+      thumbnail: hostForm.thumbnail || (parsedYoutubeId ? `https://img.youtube.com/vi/${parsedYoutubeId}/hqdefault.jpg` : 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80'),
+      youtubeUrl: hostForm.youtubeUrl || undefined,
+      youtubeVideoId: parsedYoutubeId,
+      zoomMeetingId: hostForm.zoomMeetingId || undefined,
+      zoomPasscode: hostForm.zoomPasscode || undefined,
+      zoomMeetingUrl: hostForm.zoomMeetingUrl || (hostForm.zoomMeetingId ? `https://zoom.us/j/${hostForm.zoomMeetingId.replace(/\s+/g, '')}` : undefined),
+      keyTakeaways: takeaways.length > 0 ? takeaways : ['Live technical architecture breakdown', 'Q&A session with mentor', 'Claimable verified participation certificate'],
+      certificateEligible: true,
+    };
+
+    const updated = [newWebinar, ...webinars];
+    saveWebinars(updated);
+    setShowHostModal(false);
+    showToast(`🎉 "${newWebinar.title}" is now hosted and live on the network!`);
+    setFilterType('All');
   };
 
   const handleCertificateClaimed = (claimedCert: WebinarCertificate) => {
@@ -138,6 +244,13 @@ export const WebinarsView: React.FC<WebinarsViewProps> = ({
 
           <div className="flex flex-wrap items-center gap-3">
             <button
+              onClick={() => setShowHostModal(true)}
+              className="px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer ring-2 ring-purple-400/40"
+            >
+              <span className="material-symbols-outlined text-[18px]">cell_tower</span>
+              Host a Webinar
+            </button>
+            <button
               onClick={() => onNavigate('nebula')}
               className="px-4 py-2.5 bg-white text-purple-900 hover:bg-purple-50 font-bold text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
             >
@@ -174,14 +287,16 @@ export const WebinarsView: React.FC<WebinarsViewProps> = ({
         </div>
 
         <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 font-semibold">
+          <button
+            onClick={() => setShowHostModal(true)}
+            className="px-3 py-1.5 rounded-lg bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 font-bold hover:bg-purple-200 dark:hover:bg-purple-900/60 transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[16px]">add_circle</span>
+            Host Session
+          </button>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             Zoom & YouTube Live Ready
-          </span>
-          <span>•</span>
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[15px] text-amber-500">verified</span>
-            Certificates Verified
           </span>
         </div>
       </div>
@@ -579,6 +694,239 @@ export const WebinarsView: React.FC<WebinarsViewProps> = ({
           onClose={() => setCertificateWebinar(null)}
           onCertificateClaimed={handleCertificateClaimed}
         />
+      )}
+
+      {/* Host a Webinar Modal */}
+      {showHostModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-[#0f172a] rounded-3xl max-w-2xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-8">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-transparent">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
+                  <span className="material-symbols-outlined text-[22px]">cell_tower</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                    Host a Tech Webinar or Workshop
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Broadcast via YouTube Live, Zoom, or hybrid stream with auto-issued certificates
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowHostModal(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitHostWebinar} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              {hostError && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px]">error</span>
+                  {hostError}
+                </div>
+              )}
+
+              {/* Title & Category */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Session Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={hostForm.title}
+                  onChange={(e) => setHostForm({ ...hostForm, title: e.target.value })}
+                  placeholder="e.g., Real-Time Event Driven Architecture with Kafka & Go"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Category / Track
+                  </label>
+                  <select
+                    value={hostForm.category}
+                    onChange={(e) => setHostForm({ ...hostForm, category: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  >
+                    <option value="System Architecture">System Architecture</option>
+                    <option value="AI & LLMs">AI & LLMs</option>
+                    <option value="Frontend Engineering">Frontend Engineering</option>
+                    <option value="Cloud & DevOps">Cloud & DevOps</option>
+                    <option value="Data & Backend">Data & Backend</option>
+                    <option value="Security & Infrastructure">Security & Infrastructure</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Broadcast Status
+                  </label>
+                  <select
+                    value={hostForm.status}
+                    onChange={(e) => setHostForm({ ...hostForm, status: e.target.value as any })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  >
+                    <option value="Live">🔴 Live Now (Active Stream)</option>
+                    <option value="Upcoming">📅 Upcoming (Scheduled RSVP)</option>
+                    <option value="Recorded">📼 On-Demand / Recorded</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Date & Time
+                  </label>
+                  <input
+                    type="text"
+                    value={hostForm.dateTime}
+                    onChange={(e) => setHostForm({ ...hostForm, dateTime: e.target.value })}
+                    placeholder="e.g., Today, 6:30 PM EST"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Duration
+                  </label>
+                  <input
+                    type="text"
+                    value={hostForm.duration}
+                    onChange={(e) => setHostForm({ ...hostForm, duration: e.target.value })}
+                    placeholder="e.g., 60 min"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Host / Speaker Profile */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <span className="material-symbols-outlined text-[16px] text-purple-400">person</span>
+                  Speaker / Host Information
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-500">Name</label>
+                    <input
+                      type="text"
+                      value={hostForm.speakerName}
+                      onChange={(e) => setHostForm({ ...hostForm, speakerName: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-medium"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-500">Role</label>
+                    <input
+                      type="text"
+                      value={hostForm.speakerRole}
+                      onChange={(e) => setHostForm({ ...hostForm, speakerRole: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-medium"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-500">Organization</label>
+                    <input
+                      type="text"
+                      value={hostForm.speakerCompany}
+                      onChange={(e) => setHostForm({ ...hostForm, speakerCompany: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-xs font-medium"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Stream / Platform Links */}
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[16px] text-red-500">smart_display</span>
+                      YouTube Live / Stream URL
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-normal">Auto-embeds video player</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={hostForm.youtubeUrl}
+                    onChange={(e) => setHostForm({ ...hostForm, youtubeUrl: e.target.value })}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[16px] text-blue-500">videocam</span>
+                      Zoom Meeting ID
+                    </label>
+                    <input
+                      type="text"
+                      value={hostForm.zoomMeetingId}
+                      onChange={(e) => setHostForm({ ...hostForm, zoomMeetingId: e.target.value })}
+                      placeholder="e.g., 849 2039 1192"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Zoom Passcode
+                    </label>
+                    <input
+                      type="text"
+                      value={hostForm.zoomPasscode}
+                      onChange={(e) => setHostForm({ ...hostForm, zoomPasscode: e.target.value })}
+                      placeholder="e.g., LIVE2025"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Description & Key Takeaways */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Key Takeaways (one per line)
+                </label>
+                <textarea
+                  rows={3}
+                  value={hostForm.keyTakeawaysText}
+                  onChange={(e) => setHostForm({ ...hostForm, keyTakeawaysText: e.target.value })}
+                  placeholder="Real-time production architectures&#10;Hands-on debugging best practices&#10;Industry verified certificate of completion"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowHostModal(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs shadow-lg transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">cell_tower</span>
+                  Publish & Host Session
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

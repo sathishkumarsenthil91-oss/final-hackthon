@@ -3,6 +3,8 @@ import { CourseItem, ViewType, YouTubeLearningTrack, UserProfile, UnofficialLear
 import { initialCourses } from '../data/mockData';
 import {
   extractYouTubeVideoId,
+  extractYouTubeTimestamp,
+  fetchYouTubeMetadataClient,
   loadUserTracks,
   saveUserTracks,
   formatSecondsToTime,
@@ -78,45 +80,53 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
     setTimeout(() => setCertToast(null), 4000);
   };
 
+  // Recommended Tech Labs for instant one-click testing & learning
+  const RECOMMENDED_LABS = [
+    { title: 'React 19 & Server Actions', videoId: '8pDqJVdNa44', tag: 'Frontend' },
+    { title: 'TypeScript 5 Advanced Generics', videoId: 'ahCwqrYqo9o', tag: 'TypeScript' },
+    { title: 'System Design Architecture', videoId: 'tp4_p52aZ_g', tag: 'Distributed' },
+    { title: 'Python AI & LLM Agents', videoId: 'Oe421EPjeBE', tag: 'AI & LLM' },
+    { title: 'Docker & Kubernetes DevOps', videoId: 'mbsmsi7l3r4', tag: 'DevOps' },
+  ];
+
   // Sync YouTube tracks to localStorage whenever updated
   useEffect(() => {
     saveUserTracks(user.email || 'default', youtubeTracks);
   }, [youtubeTracks, user.email]);
 
   // Handle URL submission for "Paste YouTube Learning URL"
-  const handleAddYouTubeUrl = async (e?: React.FormEvent) => {
+  const handleAddYouTubeUrl = async (e?: React.FormEvent, directUrl?: string) => {
     if (e) e.preventDefault();
     setUrlError('');
 
-    if (!pastedUrl.trim()) {
-      setUrlError('Please paste a YouTube learning video URL.');
+    const targetUrl = (directUrl !== undefined ? directUrl : pastedUrl).trim();
+
+    if (!targetUrl) {
+      setUrlError('Please paste a YouTube learning video URL or video ID.');
       return;
     }
 
-    const videoId = extractYouTubeVideoId(pastedUrl);
+    const videoId = extractYouTubeVideoId(targetUrl);
     if (!videoId) {
-      setUrlError('Invalid YouTube URL. Please provide a standard YouTube video link (e.g., https://www.youtube.com/watch?v=...)');
+      setUrlError('Invalid YouTube URL or ID. Please provide a standard link (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...)');
       return;
     }
+
+    const startSeconds = extractYouTubeTimestamp(targetUrl);
 
     // Check if already in list
     const existing = youtubeTracks.find((t) => t.videoId === videoId);
     if (existing) {
-      setActivePlayerTrack(existing);
+      const updatedExisting = startSeconds > 0 ? { ...existing, currentTime: startSeconds } : existing;
+      setActivePlayerTrack(updatedExisting);
       setPastedUrl('');
       return;
     }
 
     setIsAddingTrack(true);
     try {
-      // Fetch metadata from backend
-      const res = await fetch('/api/youtube/metadata', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoId, url: pastedUrl }),
-      });
-
-      const meta = await res.json();
+      // Resilient metadata resolver that NEVER throws error
+      const meta = await fetchYouTubeMetadataClient(videoId, targetUrl);
 
       const newTrack: YouTubeLearningTrack = {
         id: `yt-track-${videoId}-${Date.now()}`,
@@ -125,12 +135,12 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
         videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
         title: meta.title || `YouTube Engineering Track (${videoId})`,
         channel: meta.channel || 'Technical Creator',
-        channelUrl: meta.channelUrl || '',
+        channelUrl: meta.channelUrl || `https://www.youtube.com/watch?v=${videoId}`,
         thumbnail: meta.thumbnail || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
         durationSeconds: meta.durationSeconds || 1200,
         durationFormatted: meta.durationFormatted || '20m 00s',
         verifiedWatchedSeconds: 0,
-        currentTime: 0,
+        currentTime: startSeconds || 0,
         completionPercentage: 0,
         status: 'in_progress',
         lastWatched: new Date().toISOString(),
@@ -145,9 +155,46 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
       setActivePlayerTrack(newTrack);
     } catch (err: any) {
       console.error('Failed to add track:', err);
-      setUrlError('Could not process YouTube URL. Please verify the URL and try again.');
+      const fallbackTrack: YouTubeLearningTrack = {
+        id: `yt-track-${videoId}-${Date.now()}`,
+        userId: user.email || 'default',
+        videoId,
+        videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
+        title: `YouTube Technical Lab (${videoId})`,
+        channel: 'Technical Creator',
+        channelUrl: `https://www.youtube.com/watch?v=${videoId}`,
+        thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+        durationSeconds: 1200,
+        durationFormatted: '20m 00s',
+        verifiedWatchedSeconds: 0,
+        currentTime: startSeconds || 0,
+        completionPercentage: 0,
+        status: 'in_progress',
+        lastWatched: new Date().toISOString(),
+        dateAdded: new Date().toISOString(),
+        watchedRanges: [],
+      };
+      const updated = [fallbackTrack, ...youtubeTracks];
+      setYoutubeTracks(updated);
+      saveUserTracks(user.email || 'default', updated);
+      setPastedUrl('');
+      setActivePlayerTrack(fallbackTrack);
     } finally {
       setIsAddingTrack(false);
+    }
+  };
+
+  const handlePasteClipboard = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          setPastedUrl(text.trim());
+          setUrlError('');
+        }
+      }
+    } catch {
+      // Permission fallback
     }
   };
 
@@ -286,20 +333,44 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
         </div>
 
         <form onSubmit={handleAddYouTubeUrl} className="flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative flex-1 w-full">
+          <div className="relative flex-1 w-full flex items-center">
             <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
               link
             </span>
             <input
               type="text"
-              placeholder="Paste YouTube URL (e.g. https://www.youtube.com/watch?v=... or https://youtu.be/...)"
+              placeholder="Paste YouTube URL, youtu.be, /shorts, or 11-char ID (e.g. https://www.youtube.com/watch?v=...)"
               value={pastedUrl}
               onChange={(e) => {
                 setPastedUrl(e.target.value);
                 setUrlError('');
               }}
-              className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full pl-10 pr-24 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500"
             />
+            <div className="absolute right-2 flex items-center gap-1">
+              {pastedUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPastedUrl('');
+                    setUrlError('');
+                  }}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
+                  title="Clear Input"
+                >
+                  <span className="material-symbols-outlined text-[16px]">close</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handlePasteClipboard}
+                className="px-2.5 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[11px] font-bold rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
+                title="Paste from Clipboard"
+              >
+                <span className="material-symbols-outlined text-[14px]">content_paste</span>
+                <span className="hidden md:inline">Paste</span>
+              </button>
+            </div>
           </div>
 
           <button
@@ -314,7 +385,7 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
               </>
             ) : (
               <>
-                <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                <span className="material-symbols-outlined text-[18px]">play_circle</span>
                 Load & Start Track
               </>
             )}
@@ -327,6 +398,30 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
             {urlError}
           </p>
         )}
+
+        {/* Quick Launch Recommended Tech Labs */}
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1 mr-1">
+              <span className="material-symbols-outlined text-[14px] text-amber-500">bolt</span>
+              Try Popular Labs:
+            </span>
+            {RECOMMENDED_LABS.map((lab) => (
+              <button
+                key={lab.videoId}
+                type="button"
+                onClick={() => handleAddYouTubeUrl(undefined, `https://www.youtube.com/watch?v=${lab.videoId}`)}
+                className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-slate-100 dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 border border-slate-200 dark:border-slate-800 hover:border-red-400/40 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                <span>{lab.title}</span>
+                <span className="text-[9px] px-1 py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono">
+                  {lab.tag}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Main Tab Switcher */}

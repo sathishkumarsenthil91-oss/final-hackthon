@@ -98,25 +98,175 @@ export const STARTER_YOUTUBE_TRACKS: YouTubeLearningTrack[] = [
 ];
 
 /**
- * Extracts video ID from any valid YouTube URL
+ * Robustly extracts video ID from ANY YouTube URL variation, raw ID, markdown link, or embed string
  */
-export function extractYouTubeVideoId(url: string): string | null {
-  if (!url || typeof url !== 'string') return null;
-  const trimmed = url.trim();
-  
-  // Standard full regex matching watch?v=, youtu.be/, embed/, shorts/, live/
-  const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|live|shorts)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i;
-  const match = trimmed.match(regex);
+export function extractYouTubeVideoId(input: string): string | null {
+  if (!input || typeof input !== 'string') return null;
+
+  // 1. Clean input: trim, remove surrounding quotes, angle brackets, parentheses
+  let cleaned = input.trim();
+  cleaned = cleaned.replace(/^[<"'(]+|[>"')]+$/g, '');
+
+  // Handle markdown links e.g. [title](https://youtube.com/...)
+  const mdMatch = cleaned.match(/\]\((https?:\/\/[^\s)]+)\)/i);
+  if (mdMatch) cleaned = mdMatch[1];
+
+  // 2. Direct 11-character video ID check (e.g. 8pDqJVdNa44)
+  if (/^[a-zA-Z0-9_-]{11}$/.test(cleaned)) {
+    return cleaned;
+  }
+
+  // 3. Structured URL parsing
+  try {
+    const urlString = cleaned.startsWith('http://') || cleaned.startsWith('https://')
+      ? cleaned
+      : `https://${cleaned}`;
+    const parsed = new URL(urlString);
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+
+    // youtu.be/VIDEO_ID
+    if (host === 'youtu.be') {
+      const segs = parsed.pathname.split('/').filter(Boolean);
+      if (segs[0] && /^[a-zA-Z0-9_-]{11}$/.test(segs[0])) {
+        return segs[0];
+      }
+    }
+
+    // youtube.com, m.youtube.com, music.youtube.com, youtube-nocookie.com
+    if (host.includes('youtube.com') || host.includes('youtube-nocookie.com')) {
+      // Check ?v=VIDEO_ID in search params
+      const v = parsed.searchParams.get('v');
+      if (v && /^[a-zA-Z0-9_-]{11}$/.test(v)) {
+        return v;
+      }
+
+      // Check path prefixes: /shorts/ID, /embed/ID, /v/ID, /e/ID, /live/ID, /videos/ID, /clip/ID
+      const segments = parsed.pathname.split('/').filter(Boolean);
+      for (let i = 0; i < segments.length; i++) {
+        const seg = segments[i].toLowerCase();
+        if (['shorts', 'embed', 'v', 'e', 'live', 'videos', 'clip'].includes(seg)) {
+          const nextSeg = segments[i + 1];
+          if (nextSeg && /^[a-zA-Z0-9_-]{11}$/.test(nextSeg)) {
+            return nextSeg;
+          }
+        }
+      }
+    }
+  } catch {
+    // If standard URL constructor fails on unconventional strings, continue to regex fallback
+  }
+
+  // 4. Comprehensive regex fallback matching all YouTube URL structures
+  const regex = /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|e\/|shorts\/|live\/|watch\?(?:.*&)?v=|\S*?[?&]v=))([a-zA-Z0-9_-]{11})/i;
+  const match = cleaned.match(regex);
   if (match && match[1] && match[1].length === 11) {
     return match[1];
   }
-  
-  // If user pasted raw 11-char ID
-  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
-    return trimmed;
+
+  // 5. Fallback substring match for 11-char pattern after standard delimiters
+  const subMatch = cleaned.match(/(?:[?&]v=|\/)([a-zA-Z0-9_-]{11})(?:[?&/#\s]|$)/);
+  if (subMatch && subMatch[1]) {
+    return subMatch[1];
   }
-  
+
   return null;
+}
+
+/**
+ * Extracts optional starting timestamp in seconds from URL (e.g. &t=120 or ?t=2m30s)
+ */
+export function extractYouTubeTimestamp(url: string): number {
+  if (!url || typeof url !== 'string') return 0;
+  try {
+    const match = url.match(/[?&#](?:t|start)=([0-9hms]+)/i);
+    if (!match) return 0;
+    const raw = match[1];
+    if (/^\d+$/.test(raw)) return parseInt(raw, 10);
+    let seconds = 0;
+    const hours = raw.match(/(\d+)h/i);
+    const mins = raw.match(/(\d+)m/i);
+    const secs = raw.match(/(\d+)s/i);
+    if (hours) seconds += parseInt(hours[1], 10) * 3600;
+    if (mins) seconds += parseInt(mins[1], 10) * 60;
+    if (secs) seconds += parseInt(secs[1], 10);
+    return seconds;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * High-res YouTube thumbnail with fallback
+ */
+export function getYouTubeThumbnail(videoId: string): string {
+  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+}
+
+/**
+ * Fetch video metadata with multi-tier client-side resilience so adding a track NEVER fails
+ */
+export async function fetchYouTubeMetadataClient(videoId: string, originalUrl?: string): Promise<{
+  title: string;
+  channel: string;
+  channelUrl: string;
+  thumbnail: string;
+  durationSeconds: number;
+  durationFormatted: string;
+}> {
+  const fallback = {
+    title: `YouTube Technical Lab (${videoId})`,
+    channel: 'YouTube Creator',
+    channelUrl: `https://www.youtube.com/watch?v=${videoId}`,
+    thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+    durationSeconds: 1200,
+    durationFormatted: '20m 00s',
+  };
+
+  // Tier 1: Try application backend endpoint
+  try {
+    const res = await fetch('/api/youtube/metadata', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoId, url: originalUrl || `https://www.youtube.com/watch?v=${videoId}` }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.title) {
+        return {
+          title: data.title || fallback.title,
+          channel: data.channel || fallback.channel,
+          channelUrl: data.channelUrl || fallback.channelUrl,
+          thumbnail: data.thumbnail || fallback.thumbnail,
+          durationSeconds: data.durationSeconds || fallback.durationSeconds,
+          durationFormatted: data.durationFormatted || fallback.durationFormatted,
+        };
+      }
+    }
+  } catch (e) {
+    console.warn('Backend YouTube metadata fetch failed, using client fallback:', e);
+  }
+
+  // Tier 2: Public noembed client fallback
+  try {
+    const noembedRes = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+    if (noembedRes.ok) {
+      const noembedData = await noembedRes.json();
+      if (noembedData && noembedData.title) {
+        return {
+          title: noembedData.title,
+          channel: noembedData.author_name || 'YouTube Creator',
+          channelUrl: noembedData.author_url || `https://www.youtube.com/watch?v=${videoId}`,
+          thumbnail: noembedData.thumbnail_url || fallback.thumbnail,
+          durationSeconds: 1200,
+          durationFormatted: '20m 00s',
+        };
+      }
+    }
+  } catch (e) {
+    // Silent catch
+  }
+
+  return fallback;
 }
 
 /**

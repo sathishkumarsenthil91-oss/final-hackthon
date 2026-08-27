@@ -52,6 +52,7 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
 
   // DOM and Tracker references
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const playerContainerRef = useRef<HTMLDivElement | null>(null);
   const lastCheckedTimeRef = useRef<number>(track.currentTime || 0);
   const intervalTrackerRef = useRef<any>(null);
   const watchedRangesRef = useRef<[number, number][]>(track.watchedRanges || []);
@@ -61,6 +62,19 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
   const studentNotesRef = useRef(studentNotes);
   const lastPersistTimeRef = useRef<number>(Date.now());
   const isPlayingRef = useRef<boolean>(isPlaying);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [hasPlaybackError, setHasPlaybackError] = useState<boolean>(false);
+
+  // Timeline Scrubbing & Mouse Drag state
+  const [isScrubbing, setIsScrubbing] = useState<boolean>(false);
+  const [scrubTime, setScrubTime] = useState<number>(track.currentTime || 0);
+  const [scrubHoverTime, setScrubHoverTime] = useState<number | null>(null);
+  const [scrubHoverPercent, setScrubHoverPercent] = useState<number>(0);
+  const isScrubbingRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    isScrubbingRef.current = isScrubbing;
+  }, [isScrubbing]);
 
   useEffect(() => {
     isPlayingRef.current = isPlaying;
@@ -81,6 +95,24 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
   useEffect(() => {
     studentNotesRef.current = studentNotes;
   }, [studentNotes]);
+
+  // Fullscreen change listener
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!playerContainerRef.current) return;
+    if (!document.fullscreenElement) {
+      playerContainerRef.current.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   // Synchronize track updates safely to parent with throttling
   const persistTrackState = useCallback((forceImmediate = false) => {
@@ -192,6 +224,11 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
     }
 
     intervalTrackerRef.current = setInterval(() => {
+      // Do not update currentTime if the learner is actively mouse dragging or scrubbing the slider
+      if (isScrubbingRef.current) {
+        return;
+      }
+
       const prev = lastCheckedTimeRef.current;
       const current = prev + 0.5 * playbackSpeed;
       const dur = duration > 0 ? duration : 1200;
@@ -199,6 +236,7 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
       if (current <= dur) {
         lastCheckedTimeRef.current = current;
         setCurrentTime(current);
+        setScrubTime(current);
 
         const prevRanges = watchedRangesRef.current;
         const updatedRanges = mergeWatchedInterval(prevRanges, [prev, current]);
@@ -256,8 +294,37 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
     sendIframeCommand('playVideo');
     lastCheckedTimeRef.current = clamped;
     setCurrentTime(clamped);
+    setScrubTime(clamped);
     setIsPlaying(true);
     setActiveTab('player');
+  };
+
+  // Timeline Mouse Drag / Scrubbing Handlers
+  const handleScrubStart = (val: number) => {
+    setIsScrubbing(true);
+    setScrubTime(val);
+  };
+
+  const handleScrubChange = (val: number) => {
+    setScrubTime(val);
+  };
+
+  const handleScrubCommit = (val?: number) => {
+    const target = val !== undefined ? val : scrubTime;
+    setIsScrubbing(false);
+    handleSeekTo(target);
+  };
+
+  const handleTimelineMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const dur = duration > 0 ? duration : 1200;
+    setScrubHoverPercent(pos * 100);
+    setScrubHoverTime(pos * dur);
+  };
+
+  const handleTimelineMouseLeave = () => {
+    setScrubHoverTime(null);
   };
 
   // Jump relative seconds (rewind / skip 10s)
@@ -266,6 +333,7 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
     sendIframeCommand('seekTo', [nextTime, true]);
     lastCheckedTimeRef.current = nextTime;
     setCurrentTime(nextTime);
+    setScrubTime(nextTime);
   };
 
   // Change playback speed
@@ -514,15 +582,48 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
           {/* TAB 1: PLAYER & LIVE METRICS */}
           <div className={activeTab === 'player' ? 'space-y-5 block' : 'hidden'}>
             {/* Embedded YouTube Iframe (Always mounted and connected) */}
-            <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black shadow-2xl border border-slate-800">
+            <div
+              ref={playerContainerRef}
+              className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black shadow-2xl border border-slate-800 group"
+            >
               <iframe
                 ref={iframeRef}
-                src={`https://www.youtube.com/embed/${track.videoId}?enablejsapi=1&autoplay=1&start=${startSeconds}&rel=0&modestbranding=1`}
+                src={`https://www.youtube-nocookie.com/embed/${track.videoId}?enablejsapi=1&autoplay=1&start=${startSeconds}&rel=0&modestbranding=1&playsinline=1${
+                  typeof window !== 'undefined' && window.location.origin ? `&origin=${encodeURIComponent(window.location.origin)}` : ''
+                }`}
                 title={track.title}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 className="w-full h-full border-0"
               />
+
+              {/* Direct Playback Overlay / Fallback if embed is restricted */}
+              {hasPlaybackError && (
+                <div className="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-6 text-center space-y-3 z-20">
+                  <span className="material-symbols-outlined text-4xl text-amber-400">smart_display</span>
+                  <h4 className="text-base font-bold text-white">Video Playback on 3rd-Party Embeds</h4>
+                  <p className="text-xs text-slate-300 max-w-md">
+                    This video creator may have restricted direct iframe embedding. You can watch directly on YouTube while keeping your IndustrySkill watch tracker, notes, and AI summary synchronized!
+                  </p>
+                  <div className="flex items-center gap-3 pt-2">
+                    <a
+                      href={`https://www.youtube.com/watch?v=${track.videoId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-2 shadow-lg"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                      Watch on YouTube
+                    </a>
+                    <button
+                      onClick={() => setHasPlaybackError(false)}
+                      className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold"
+                    >
+                      Retry Player
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Quick Player Interactive Controls Bar */}
@@ -561,7 +662,7 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
                 {/* Speed Selector */}
                 <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded-xl border border-slate-800">
                   <span className="text-[10px] text-slate-400 font-bold uppercase">Speed:</span>
-                  {[1, 1.25, 1.5, 2].map((spd) => (
+                  {[0.75, 1, 1.25, 1.5, 2].map((spd) => (
                     <button
                       key={spd}
                       onClick={() => handleSetSpeed(spd)}
@@ -586,27 +687,123 @@ export const YouTubeSkillTrackPlayer: React.FC<YouTubeSkillTrackPlayerProps> = (
                     {isMuted ? 'volume_off' : 'volume_up'}
                   </span>
                 </button>
+
+                {/* Fullscreen Toggle */}
+                <button
+                  onClick={toggleFullscreen}
+                  className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition-colors cursor-pointer"
+                  title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                >
+                  <span className="material-symbols-outlined text-[16px]">
+                    {isFullscreen ? 'fullscreen_exit' : 'fullscreen'}
+                  </span>
+                </button>
               </div>
 
               <div className="flex items-center gap-3 text-xs text-slate-400">
+                <a
+                  href={`https://www.youtube.com/watch?v=${track.videoId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-red-400 flex items-center gap-1 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                  <span>Direct YouTube</span>
+                </a>
                 <span>Pos: <strong className="text-white font-mono">{formatSecondsToTime(currentTime)}</strong> / {formatSecondsToTime(duration)}</span>
               </div>
             </div>
 
-            {/* Time Scrubber / Range slider */}
-            <div className="p-3.5 rounded-2xl bg-slate-950/50 border border-slate-800 space-y-1.5">
+            {/* Interactive Time Scrubber with Mouse Drag, Hover Tooltip, & Heatmap */}
+            <div
+              className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2 relative select-none"
+              onMouseMove={handleTimelineMouseMove}
+              onMouseLeave={handleTimelineMouseLeave}
+            >
               <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-slate-400">Timeline Scrubber</span>
-                <span className="text-blue-400 font-mono">{formatSecondsToTime(currentTime)} / {formatSecondsToTime(duration)}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400">Timeline Scrubber</span>
+                  {isScrubbing && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-500/20 text-blue-400 font-bold border border-blue-500/30 animate-pulse">
+                      Seeking...
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500 font-mono text-[11px]">
+                    {duration > 0 ? Math.round(((isScrubbing ? scrubTime : currentTime) / duration) * 100) : 0}%
+                  </span>
+                  <span className="text-blue-400 font-mono font-bold">
+                    {formatSecondsToTime(isScrubbing ? scrubTime : currentTime)} / {formatSecondsToTime(duration)}
+                  </span>
+                </div>
               </div>
-              <input
-                type="range"
-                min={0}
-                max={duration || 1200}
-                value={currentTime}
-                onChange={(e) => handleSeekTo(Number(e.target.value))}
-                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
-              />
+
+              {/* Slider Track with Custom Fill & Watched Segments */}
+              <div className="relative w-full h-4 flex items-center group/scrubber cursor-pointer">
+                {/* Background Track */}
+                <div className="absolute inset-x-0 h-2 bg-slate-800/90 rounded-full overflow-hidden">
+                  {/* Watched Verified Ranges Heatmap */}
+                  {watchedRanges.map(([start, end], idx) => {
+                    const dur = duration > 0 ? duration : 1200;
+                    const leftPct = (start / dur) * 100;
+                    const widthPct = Math.max(0.5, ((end - start) / dur) * 100);
+                    return (
+                      <div
+                        key={idx}
+                        className="absolute top-0 bottom-0 bg-emerald-500/40"
+                        style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                        title={`Verified Watched: ${formatSecondsToTime(start)} - ${formatSecondsToTime(end)}`}
+                      />
+                    );
+                  })}
+                  {/* Current Position Fill */}
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 transition-none"
+                    style={{
+                      width: `${duration > 0 ? ((isScrubbing ? scrubTime : currentTime) / duration) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
+
+                {/* Range Input for Native & Mouse Drag Interaction */}
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 1200}
+                  step={0.5}
+                  value={isScrubbing ? scrubTime : currentTime}
+                  onPointerDown={(e) => handleScrubStart(Number((e.target as HTMLInputElement).value))}
+                  onMouseDown={(e) => handleScrubStart(Number((e.target as HTMLInputElement).value))}
+                  onTouchStart={(e) => handleScrubStart(Number((e.target as HTMLInputElement).value))}
+                  onInput={(e) => handleScrubChange(Number((e.target as HTMLInputElement).value))}
+                  onChange={(e) => handleScrubChange(Number((e.target as HTMLInputElement).value))}
+                  onPointerUp={(e) => handleScrubCommit(Number((e.target as HTMLInputElement).value))}
+                  onMouseUp={(e) => handleScrubCommit(Number((e.target as HTMLInputElement).value))}
+                  onTouchEnd={(e) => handleScrubCommit(Number((e.target as HTMLInputElement).value))}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
+
+                {/* Visible Slider Knob / Thumb */}
+                <div
+                  className={`absolute w-4 h-4 bg-white rounded-full shadow-lg border-2 border-blue-500 pointer-events-none transform -translate-x-1/2 transition-transform duration-75 ${
+                    isScrubbing ? 'scale-125 ring-4 ring-blue-500/30' : 'group-hover/scrubber:scale-110'
+                  }`}
+                  style={{
+                    left: `${duration > 0 ? ((isScrubbing ? scrubTime : currentTime) / duration) * 100 : 0}%`,
+                  }}
+                />
+
+                {/* Hover Tooltip */}
+                {scrubHoverTime !== null && !isScrubbing && (
+                  <div
+                    className="absolute -top-7 transform -translate-x-1/2 px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-[10px] font-mono text-white shadow-md pointer-events-none whitespace-nowrap z-20"
+                    style={{ left: `${scrubHoverPercent}%` }}
+                  >
+                    {formatSecondsToTime(scrubHoverTime)}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Progress & Quick Stats Card */}

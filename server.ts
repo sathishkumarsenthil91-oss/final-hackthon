@@ -241,33 +241,62 @@ const youtubeSummaryCache = new Map<string, any>();
 app.post('/api/youtube/metadata', async (req, res) => {
   try {
     const { url, videoId } = req.body;
-    let extractedId = videoId;
+    let extractedId = typeof videoId === 'string' ? videoId.trim() : '';
+
     if (!extractedId && url) {
-      const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|live|shorts)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i);
-      extractedId = match ? match[1] : null;
+      const cleaned = String(url).trim().replace(/^[<"'(]+|[>"')]+$/g, '');
+      if (/^[a-zA-Z0-9_-]{11}$/.test(cleaned)) {
+        extractedId = cleaned;
+      } else {
+        const regex = /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|e\/|shorts\/|live\/|watch\?(?:.*&)?v=|\S*?[?&]v=))([a-zA-Z0-9_-]{11})/i;
+        const match = cleaned.match(regex);
+        if (match && match[1]) {
+          extractedId = match[1];
+        } else {
+          const subMatch = cleaned.match(/(?:[?&]v=|\/)([a-zA-Z0-9_-]{11})(?:[?&/#\s]|$)/);
+          if (subMatch && subMatch[1]) {
+            extractedId = subMatch[1];
+          }
+        }
+      }
     }
 
     if (!extractedId || extractedId.length !== 11) {
       return res.status(400).json({ error: 'Valid 11-character YouTube video ID or URL is required.' });
     }
 
-    // Attempt oEmbed lookup from YouTube
-    let oembedData: any = {};
-    try {
-      const oembedRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${extractedId}&format=json`);
-      if (oembedRes.ok) {
-        oembedData = await oembedRes.json();
-      }
-    } catch (e) {
-      console.warn('oEmbed fetch fallback:', e);
-    }
-
-    const title = oembedData.title || `YouTube Learning Masterclass (${extractedId})`;
-    const channel = oembedData.author_name || 'YouTube Technical Creator';
-    const channelUrl = oembedData.author_url || `https://www.youtube.com/@creator`;
+    // Attempt 1: oEmbed lookup from YouTube
+    let title = `YouTube Technical Masterclass (${extractedId})`;
+    let channel = 'YouTube Technical Creator';
+    let channelUrl = `https://www.youtube.com/watch?v=${extractedId}`;
     const thumbnail = `https://img.youtube.com/vi/${extractedId}/hqdefault.jpg`;
 
-    res.json({
+    try {
+      const oembedRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${extractedId}&format=json`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; IndustrySkill/2.0)' },
+      });
+      if (oembedRes.ok) {
+        const oembedData = await oembedRes.json();
+        if (oembedData.title) title = oembedData.title;
+        if (oembedData.author_name) channel = oembedData.author_name;
+        if (oembedData.author_url) channelUrl = oembedData.author_url;
+      }
+    } catch (e) {
+      console.warn('YouTube direct oEmbed fetch fallback, trying noembed:', e);
+      try {
+        const noembedRes = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${extractedId}`);
+        if (noembedRes.ok) {
+          const noembedData = await noembedRes.json();
+          if (noembedData.title) title = noembedData.title;
+          if (noembedData.author_name) channel = noembedData.author_name;
+          if (noembedData.author_url) channelUrl = noembedData.author_url;
+        }
+      } catch (err) {
+        console.warn('All oembed fallbacks exhausted, using clean default title');
+      }
+    }
+
+    return res.json({
       success: true,
       videoId: extractedId,
       videoUrl: `https://www.youtube.com/watch?v=${extractedId}`,
