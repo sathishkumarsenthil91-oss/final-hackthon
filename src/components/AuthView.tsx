@@ -22,8 +22,15 @@ export const AuthView: React.FC<AuthViewProps> = ({
   const [authMode, setAuthMode] = useState<'login' | 'register'>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   
-  // Login State
-  const [loginEmail, setLoginEmail] = useState('');
+  // Login State - pre-populate from URL query params if provided
+  const [loginEmail, setLoginEmail] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('email') || params.get('registered_email') || '';
+    } catch {
+      return '';
+    }
+  });
   const [loginPassword, setLoginPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
 
@@ -38,7 +45,17 @@ export const AuthView: React.FC<AuthViewProps> = ({
 
   // Notification / error / success state
   const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('signup') === 'success' || params.get('registered') === 'true') {
+        return 'Your account has been created. Please check your email and verify your address before logging in.';
+      }
+    } catch {
+      // ignore
+    }
+    return '';
+  });
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -164,13 +181,6 @@ export const AuthView: React.FC<AuthViewProps> = ({
         return;
       }
 
-      // Check if session is null (email confirmation required)
-      if (!data?.session) {
-        setSuccessMessage('Check your email and confirm your account before logging in.');
-        setIsLoading(false);
-        return;
-      }
-
       const newProfileData: Partial<UserProfile> = {
         name,
         email,
@@ -186,12 +196,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
         console.error(err);
       }
 
-      // Only redirect when a real session exists
-      onLoginSuccess(name, email, newProfileData);
-
-      // Redirect user to Home page ("/")
-      window.history.pushState({}, '', '/');
-      onNavigate('dashboard');
+      // Do NOT auto-login. Redirect user to the Sign In page/mode, pre-fill email, and display success message.
+      setLoginEmail(email);
+      setLoginPassword('');
+      setRegPassword('');
+      setRegConfirmPassword('');
+      setAuthMode('login');
+      setSuccessMessage('Your account has been created. Please check your email and verify your address before logging in.');
+      setErrorMessage('');
     } catch (err: any) {
       setErrorMessage(err?.message || 'Failed to sign up. Please try again.');
     } finally {
@@ -199,26 +211,26 @@ export const AuthView: React.FC<AuthViewProps> = ({
     }
   };
 
-  const handleGoogleAuth = () => {
+  const handleGoogleAuth = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      const email = 'user.student@gmail.com';
-      let savedProfile: any = null;
-      try {
-        const raw = localStorage.getItem(`industryskill_profile_${email}`);
-        if (raw) savedProfile = JSON.parse(raw);
-      } catch (err) {
-        console.error(err);
-      }
-
-      const name = savedProfile?.name || 'Verified Student';
-      onLoginSuccess(name, email, savedProfile || {
-        college: 'University Institute of Technology',
-        targetRole: 'Full Stack Developer',
+    setErrorMessage('');
+    setSuccessMessage('');
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
       });
-      onNavigate('dashboard');
-    }, 350);
+
+      if (error) {
+        setErrorMessage(error.message);
+        setIsLoading(false);
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to initiate Google sign in. Please try again.');
+      setIsLoading(false);
+    }
   };
 
   const handleDemoAccess = () => {
@@ -314,6 +326,16 @@ export const AuthView: React.FC<AuthViewProps> = ({
               Register
             </button>
           </div>
+
+          {/* Success Message Box */}
+          {successMessage && (
+            <div className="mb-4 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-200 text-[13px] flex items-start gap-2.5 shadow-xs">
+              <span className="material-symbols-outlined text-[19px] text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
+                check_circle
+              </span>
+              <span className="leading-snug font-medium">{successMessage}</span>
+            </div>
+          )}
 
           {/* Error Message Box */}
           {errorMessage && (

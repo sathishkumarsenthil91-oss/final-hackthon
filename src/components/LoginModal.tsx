@@ -32,6 +32,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   // Error & loading state
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -39,6 +40,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setSuccessMessage('');
     const email = loginEmail.trim().toLowerCase();
     const password = loginPassword;
     if (!email || !password) {
@@ -149,11 +151,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         console.error(err);
       }
 
-      onLoginSuccess(name, email, newProfileData);
-      onClose();
-      // Redirect user to Home page ("/")
-      window.history.pushState({}, '', '/');
-      onNavigate('dashboard');
+      // Do NOT auto-login. Redirect user to Sign In tab, pre-fill email, and show success message.
+      setLoginEmail(email);
+      setLoginPassword('');
+      setRegPassword('');
+      setTab('login');
+      setSuccessMessage('Your account has been created. Please check your email and verify your address before logging in.');
+      setErrorMessage('');
     } catch (err: any) {
       setErrorMessage(err?.message || 'Failed to register.');
     } finally {
@@ -161,23 +165,26 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     }
   };
 
-  const handleGoogleSignIn = () => {
-    const email = 'user.student@gmail.com';
-    let savedProfile: any = null;
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setErrorMessage('');
+    setSuccessMessage('');
     try {
-      const raw = localStorage.getItem(`industryskill_profile_${email}`);
-      if (raw) savedProfile = JSON.parse(raw);
-    } catch (err) {
-      console.error(err);
-    }
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
 
-    const name = savedProfile?.name || 'Verified Student';
-    onLoginSuccess(name, email, savedProfile || {
-      college: 'University Institute of Technology',
-      targetRole: 'Full Stack Developer',
-    });
-    onClose();
-    onNavigate('dashboard');
+      if (error) {
+        setErrorMessage(error.message);
+        setIsLoading(false);
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to initiate Google sign in.');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -211,7 +218,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#0d1527] rounded-2xl mb-5 neu-inset border border-slate-200/50 dark:border-slate-800">
           <button
             type="button"
-            onClick={() => setTab('login')}
+            onClick={() => {
+              setTab('login');
+              setErrorMessage('');
+            }}
             className={`py-2 rounded-xl text-[13px] font-bold transition-all cursor-pointer ${
               tab === 'login'
                 ? 'bg-white dark:bg-[#1e293b] text-blue-600 dark:text-blue-400 shadow-sm'
@@ -222,7 +232,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => setTab('register')}
+            onClick={() => {
+              setTab('register');
+              setErrorMessage('');
+              setSuccessMessage('');
+            }}
             className={`py-2 rounded-xl text-[13px] font-bold transition-all cursor-pointer ${
               tab === 'register'
                 ? 'bg-white dark:bg-[#1e293b] text-blue-600 dark:text-blue-400 shadow-sm'
@@ -232,6 +246,26 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             Register
           </button>
         </div>
+
+        {/* Success Message Banner */}
+        {successMessage && (
+          <div className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-200 text-[13px] flex items-start gap-2 shadow-xs">
+            <span className="material-symbols-outlined text-[18px] text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
+              check_circle
+            </span>
+            <span className="leading-snug font-medium">{successMessage}</span>
+          </div>
+        )}
+
+        {/* Error Message Banner */}
+        {errorMessage && (
+          <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/60 text-red-700 dark:text-red-300 text-[13px] flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px] text-red-500 shrink-0">
+              error
+            </span>
+            <span>{errorMessage}</span>
+          </div>
+        )}
 
         {/* Login Form */}
         {tab === 'login' ? (

@@ -24,6 +24,7 @@ import { NetworkView } from './components/NetworkView';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { LoginModal } from './components/LoginModal';
 import { SmartCopilotDrawer } from './components/SmartCopilotDrawer';
+import { supabase } from './supabaseClient';
 
 export default function App() {
   // Check for existing saved session
@@ -68,6 +69,45 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  // Sync Supabase Auth session (handles Google OAuth callback redirects and persisted sessions)
+  useEffect(() => {
+    // Check initial active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const email = session.user.email || '';
+        const meta = session.user.user_metadata || {};
+        const name = meta.full_name || meta.name || email.split('@')[0] || 'Verified Student';
+        handleLoginSuccess(name, email, {
+          avatarUrl: meta.avatar_url || meta.picture,
+          college: meta.college,
+          targetRole: meta.target_role,
+        });
+        setCurrentView((prev) => (prev === 'auth' || prev === 'login' || prev === 'register' ? 'dashboard' : prev));
+      }
+    });
+
+    // Listen to Supabase auth events
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
+        const email = session.user.email || '';
+        const meta = session.user.user_metadata || {};
+        const name = meta.full_name || meta.name || email.split('@')[0] || 'Verified Student';
+        handleLoginSuccess(name, email, {
+          avatarUrl: meta.avatar_url || meta.picture,
+          college: meta.college,
+          targetRole: meta.target_role,
+        });
+        setCurrentView((prev) => (prev === 'auth' || prev === 'login' || prev === 'register' ? 'dashboard' : prev));
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const handleToggleTheme = () => {
     setIsDarkMode((prev) => !prev);
@@ -128,7 +168,12 @@ export default function App() {
     setUser(nextUser);
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error(err);
+    }
     try {
       localStorage.removeItem('industryskill_auth_user');
     } catch (err) {
