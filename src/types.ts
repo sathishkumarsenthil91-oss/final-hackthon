@@ -155,6 +155,11 @@ export interface UserProfile {
   isPrivateAccount?: boolean;
   followersCount?: number;
   followingCount?: number;
+  userId?: string;
+  username?: string;
+  interests?: string[];
+  skills?: string[];
+  connectivitySetupCompleted?: boolean;
 }
 
 export interface UserLibraryItem {
@@ -186,6 +191,8 @@ export interface LibraryAccessRequest {
 
 export interface NetworkUser {
   id: string;
+  userId?: string;
+  username?: string;
   name: string;
   headline: string;
   avatarUrl: string;
@@ -197,6 +204,8 @@ export interface NetworkUser {
   followersCount: number;
   followingCount: number;
   isFollowing: boolean;
+  isFollower?: boolean;
+  isFriend?: boolean;
   isFollowRequested?: boolean;
   isPrivate: boolean;
   isLibraryPrivate?: boolean;
@@ -207,6 +216,7 @@ export interface NetworkUser {
   isMentor?: boolean;
   mutualCount?: number;
   skills: string[];
+  interests?: string[];
   certificates: GeneratedCertificate[];
   libraryItems?: UserLibraryItem[];
   projects: UserProject[];

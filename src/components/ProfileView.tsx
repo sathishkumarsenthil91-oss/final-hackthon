@@ -299,15 +299,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </div>
                 <div>
                   <span className="text-slate-400 text-xs font-semibold block uppercase">Phone</span>
-                  <span className="text-slate-800 dark:text-slate-200 font-medium">{user.phone || '+1 (555) 234-8901'}</span>
+                  <span className="text-slate-800 dark:text-slate-200 font-medium">{user.phone || 'Not provided'}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 text-xs font-semibold block uppercase">Academic Degree</span>
-                  <span className="text-slate-800 dark:text-slate-200 font-medium">{user.degree}</span>
+                  <span className="text-slate-800 dark:text-slate-200 font-medium">{user.degree || 'B.Tech / Bachelor of Science'}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 text-xs font-semibold block uppercase">GPA Benchmark</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">{user.gpa || '3.85 / 4.00 (Distinction)'}</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">{user.gpa || 'Not specified'}</span>
                 </div>
               </div>
             </div>
@@ -320,8 +320,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <a
-                  href={user.githubUrl || `https://github.com/${(user.name || 'developer').toLowerCase().replace(/\s+/g, '')}`}
-                  target="_blank"
+                  href={user.githubUrl ? (user.githubUrl.startsWith('http') ? user.githubUrl : `https://${user.githubUrl}`) : '#'}
+                  target={user.githubUrl ? '_blank' : '_self'}
                   rel="noreferrer"
                   className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-blue-500 transition-all flex items-center gap-3"
                 >
@@ -329,13 +329,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <div className="min-w-0">
                     <p className="text-xs text-slate-400 font-bold">GitHub</p>
                     <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 truncate">
-                      {user.githubUrl ? user.githubUrl.replace(/^https?:\/\//, '') : `github.com/${(user.name || 'developer').toLowerCase().replace(/\s+/g, '')}`}
+                      {user.githubUrl ? user.githubUrl.replace(/^https?:\/\//, '') : 'Not connected'}
                     </p>
                   </div>
                 </a>
                 <a
-                  href={user.linkedinUrl || `https://linkedin.com/in/${(user.name || 'developer').toLowerCase().replace(/\s+/g, '')}`}
-                  target="_blank"
+                  href={user.linkedinUrl ? (user.linkedinUrl.startsWith('http') ? user.linkedinUrl : `https://${user.linkedinUrl}`) : '#'}
+                  target={user.linkedinUrl ? '_blank' : '_self'}
                   rel="noreferrer"
                   className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-blue-500 transition-all flex items-center gap-3"
                 >
@@ -343,13 +343,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <div className="min-w-0">
                     <p className="text-xs text-slate-400 font-bold">LinkedIn</p>
                     <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 truncate">
-                      {user.linkedinUrl ? user.linkedinUrl.replace(/^https?:\/\//, '') : `linkedin.com/in/${(user.name || 'developer').toLowerCase().replace(/\s+/g, '')}`}
+                      {user.linkedinUrl ? user.linkedinUrl.replace(/^https?:\/\//, '') : 'Not connected'}
                     </p>
                   </div>
                 </a>
                 <a
-                  href={user.portfolioUrl || `https://${(user.name || 'developer').toLowerCase().replace(/\s+/g, '')}.dev`}
-                  target="_blank"
+                  href={user.portfolioUrl ? (user.portfolioUrl.startsWith('http') ? user.portfolioUrl : `https://${user.portfolioUrl}`) : '#'}
+                  target={user.portfolioUrl ? '_blank' : '_self'}
                   rel="noreferrer"
                   className="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-blue-500 transition-all flex items-center gap-3"
                 >
@@ -357,7 +357,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <div className="min-w-0">
                     <p className="text-xs text-slate-400 font-bold">Portfolio</p>
                     <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 truncate">
-                      {user.portfolioUrl ? user.portfolioUrl.replace(/^https?:\/\//, '') : `${(user.name || 'developer').toLowerCase().replace(/\s+/g, '')}.dev`}
+                      {user.portfolioUrl ? user.portfolioUrl.replace(/^https?:\/\//, '') : 'Not connected'}
                     </p>
                   </div>
                 </a>
@@ -501,45 +501,39 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       {/* Tab 3: Achievements & Badges */}
       {activeTab === 'achievements' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white dark:bg-[#151f38] border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs flex gap-4 items-start">
-            <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl shrink-0">
-              🏆
+        <div className="space-y-6">
+          {(!user.achievements || user.achievements.length === 0) ? (
+            <div className="bg-white dark:bg-[#151f38] border border-slate-200/80 dark:border-slate-800 rounded-3xl p-12 text-center space-y-3 shadow-xs">
+              <span className="material-symbols-outlined text-4xl text-slate-400">military_tech</span>
+              <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">No Badges Earned Yet</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Complete assignments, pass technical quizzes, and build daily study streaks to unlock verified career badges.
+              </p>
+              <button
+                onClick={() => onNavigate('courses')}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+              >
+                Start Learning
+              </button>
             </div>
-            <div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Mastery: Semantic Web</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Scored 98% in HTML5 & Modern CSS Responsive Architectures benchmark.</p>
-              <span className="inline-block mt-2 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
-                Verified Badge
-              </span>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {user.achievements.map((ach, idx) => (
+                <div key={idx} className="bg-white dark:bg-[#151f38] border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs flex gap-4 items-start">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl shrink-0">
+                    {ach.badgeIcon || '🏆'}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">{ach.title}</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{ach.description}</p>
+                    <span className="inline-block mt-2 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                      {ach.dateEarned || 'Verified Badge'}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-
-          <div className="bg-white dark:bg-[#151f38] border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs flex gap-4 items-start">
-            <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl shrink-0">
-              ⚡
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">14-Day Sprint Streak</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Completed daily React 19 labs and assignments consecutively without break.</p>
-              <span className="inline-block mt-2 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-full">
-                Active Streak
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-[#151f38] border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs flex gap-4 items-start">
-            <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center text-2xl shrink-0">
-              🛡️
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Scam Defense Guardian</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Identified and reported 4 fraudulent job postings on the safety network.</p>
-              <span className="inline-block mt-2 text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-full">
-                Community Champion
-              </span>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -565,99 +559,95 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {(user.learningRecords && user.learningRecords.length > 0
-              ? user.learningRecords
-              : [
-                  {
-                    recordId: 'IS-REC-YTL-2026-TS92A',
-                    userId: user.email || 'student',
-                    userName: user.name,
-                    videoTitle: 'TypeScript 5.x Advanced Generics & Strict Enterprise Patterns',
-                    channel: 'Jack Herrington / Senior Engineer',
-                    videoId: 'ahCwqrYqo9o',
-                    videoUrl: 'https://www.youtube.com/watch?v=ahCwqrYqo9o',
-                    verifiedWatchSeconds: 1200,
-                    verifiedWatchFormatted: '20m 00s',
-                    completionPercentage: 100,
-                    completionDate: 'Recently Completed',
-                    disclaimer:
-                      'This is an unofficial self-directed learning completion record generated by IndustrySkill to verify verified watch time. It is not issued, certified, or endorsed by YouTube, Google LLC, or the video creator.',
-                    skillsValidated: ['TypeScript', 'Generics', 'Strict Mode', 'Enterprise Architecture'],
-                  },
-                ]
-            ).map((record: UnofficialLearningRecord, idx: number) => (
-              <div
-                key={idx}
-                className="bg-white dark:bg-[#151f38] border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs hover:shadow-lg transition-all flex flex-col justify-between space-y-4 relative overflow-hidden"
+          {(!user.learningRecords || user.learningRecords.length === 0) ? (
+            <div className="bg-white dark:bg-[#151f38] border border-slate-200/80 dark:border-slate-800 rounded-3xl p-12 text-center space-y-3 shadow-xs">
+              <span className="material-symbols-outlined text-4xl text-slate-400">history_edu</span>
+              <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">No Verified Records Yet</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Watch curated technical tracks on YouTube with verified active study time to generate tamper-resistant learning records.
+              </p>
+              <button
+                onClick={() => onNavigate('courses')}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
               >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">verified</span>
-                      Verified Completion
-                    </span>
-                    <span className="text-[11px] font-mono text-slate-400 font-bold">
-                      {record.recordId}
-                    </span>
+                Browse YouTube Skill Tracks
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {user.learningRecords.map((record: UnofficialLearningRecord, idx: number) => (
+                <div
+                  key={idx}
+                  className="bg-white dark:bg-[#151f38] border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs hover:shadow-lg transition-all flex flex-col justify-between space-y-4 relative overflow-hidden"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px]">verified</span>
+                        Verified Completion
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-400 font-bold">
+                        {record.recordId}
+                      </span>
+                    </div>
+
+                    <h4 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
+                      {record.videoTitle}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Curated from: <strong className="text-slate-700 dark:text-slate-300">{record.channel}</strong>
+                    </p>
+
+                    <div className="grid grid-cols-3 gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 text-center">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Watch Time</span>
+                        <span className="text-xs font-black text-slate-900 dark:text-white">{record.verifiedWatchFormatted}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Completion</span>
+                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{record.completionPercentage}%</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Date</span>
+                        <span className="text-xs font-black text-slate-900 dark:text-white">{record.completionDate}</span>
+                      </div>
+                    </div>
                   </div>
 
-                  <h4 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
-                    {record.videoTitle}
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Curated from: <strong className="text-slate-700 dark:text-slate-300">{record.channel}</strong>
-                  </p>
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      onClick={() => setSelectedRecord(record)}
+                      className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">visibility</span>
+                      View Record
+                    </button>
 
-                  <div className="grid grid-cols-3 gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 text-center">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Watch Time</span>
-                      <span className="text-xs font-black text-slate-900 dark:text-white">{record.verifiedWatchFormatted}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Completion</span>
-                      <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{record.completionPercentage}%</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Date</span>
-                      <span className="text-xs font-black text-slate-900 dark:text-white">{record.completionDate}</span>
-                    </div>
+                    <button
+                      onClick={() => downloadRecordAsPDF(record)}
+                      className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="Download Certificate PDF"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">download</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        const text = encodeURIComponent(
+                          `Excited to share that I completed a self-directed verified technical study course on "${record.videoTitle}" from ${record.channel} via IndustrySkill.\n\nVerified Watch Time: ${record.verifiedWatchFormatted} (${record.completionPercentage}% verified completion).\nUnofficial Record ID: ${record.recordId}\n#Engineering #ContinuousLearning #FullStack`
+                        );
+                        window.open(`https://www.linkedin.com/feed/?shareActive=true&text=${text}`, '_blank');
+                      }}
+                      className="p-2.5 rounded-xl bg-[#0a66c2] hover:bg-[#004182] text-white transition-colors cursor-pointer"
+                      title="Share to LinkedIn"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">share</span>
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    onClick={() => setSelectedRecord(record)}
-                    className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">visibility</span>
-                    View Record
-                  </button>
-
-                  <button
-                    onClick={() => downloadRecordAsPDF(record)}
-                    className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                    title="Download Certificate PDF"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">download</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const text = encodeURIComponent(
-                        `Excited to share that I completed a self-directed verified technical study course on "${record.videoTitle}" from ${record.channel} via IndustrySkill.\n\nVerified Watch Time: ${record.verifiedWatchFormatted} (${record.completionPercentage}% verified completion).\nUnofficial Record ID: ${record.recordId}\n#Engineering #ContinuousLearning #FullStack`
-                      );
-                      window.open(`https://www.linkedin.com/feed/?shareActive=true&text=${text}`, '_blank');
-                    }}
-                    className="p-2.5 rounded-xl bg-[#0a66c2] hover:bg-[#004182] text-white transition-colors cursor-pointer"
-                    title="Share to LinkedIn"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">share</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

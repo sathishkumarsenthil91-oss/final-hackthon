@@ -181,28 +181,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             {/* Critical Gaps */}
             <div className="space-y-3">
-              {criticalGaps.slice(0, 3).map((skill) => (
-                <div key={skill.id} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex justify-between text-xs font-bold mb-1">
-                      <span className="text-slate-900 dark:text-white">{skill.name}</span>
-                      <span className="text-amber-600 dark:text-amber-400">{skill.proficiency}% (Delta: -{100 - skill.proficiency}%)</span>
-                    </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
-                      <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${skill.proficiency}%` }} />
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (onSelectSkillForLearning) onSelectSkillForLearning(skill.name);
-                      onNavigate('courses');
-                    }}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer shrink-0"
-                  >
-                    Close Gap
-                  </button>
+              {criticalGaps.length === 0 ? (
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-center">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">No critical skill gaps identified. Add skills to run benchmark analysis.</p>
                 </div>
-              ))}
+              ) : (
+                criticalGaps.slice(0, 3).map((skill) => (
+                  <div key={skill.id} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex justify-between text-xs font-bold mb-1">
+                        <span className="text-slate-900 dark:text-white">{skill.name}</span>
+                        <span className="text-amber-600 dark:text-amber-400">{skill.proficiency}% (Delta: -{100 - skill.proficiency}%)</span>
+                      </div>
+                      <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                        <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${skill.proficiency}%` }} />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (onSelectSkillForLearning) onSelectSkillForLearning(skill.name);
+                        onNavigate('courses');
+                      }}
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer shrink-0"
+                    >
+                      Close Gap
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Strong Foundations Pill list */}
@@ -211,15 +217,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 Verified Mastery Foundations ({strongFoundations.length})
               </span>
               <div className="flex flex-wrap gap-2">
-                {strongFoundations.map((skill) => (
-                  <span
-                    key={skill.id}
-                    className="px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-bold flex items-center gap-1"
-                  >
-                    <span className="material-symbols-outlined text-[14px]">check</span>
-                    {skill.name} ({skill.proficiency}%)
-                  </span>
-                ))}
+                {strongFoundations.length === 0 ? (
+                  <span className="text-xs text-slate-400">No verified foundations recorded yet.</span>
+                ) : (
+                  strongFoundations.map((skill) => (
+                    <span
+                      key={skill.id}
+                      className="px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-bold flex items-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">check</span>
+                      {skill.name} ({skill.proficiency}%)
+                    </span>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -239,34 +249,46 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {topRecommendations.map((rec) => (
-                <div
-                  key={rec.id}
-                  className="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 flex flex-col justify-between space-y-3"
+            {topRecommendations.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-center space-y-2">
+                <p className="text-xs text-slate-500 dark:text-slate-400">No custom growth actions generated yet.</p>
+                <button
+                  onClick={() => onNavigate('ai-recommendations')}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
                 >
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[10px] font-extrabold uppercase text-blue-700 dark:text-blue-300">
-                        {rec.category}
-                      </span>
-                      <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">
-                        +{rec.impactScore}% Impact
-                      </span>
-                    </div>
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-2">
-                      {rec.title}
-                    </h4>
-                  </div>
-                  <button
-                    onClick={() => onNavigate(rec.actionView)}
-                    className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer text-center"
+                  Generate AI Recommendations
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {topRecommendations.map((rec) => (
+                  <div
+                    key={rec.id}
+                    className="p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 flex flex-col justify-between space-y-3"
                   >
-                    {rec.actionLabel}
-                  </button>
-                </div>
-              ))}
-            </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-extrabold uppercase text-blue-700 dark:text-blue-300">
+                          {rec.category}
+                        </span>
+                        <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">
+                          +{rec.impactScore}% Impact
+                        </span>
+                      </div>
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-2">
+                        {rec.title}
+                      </h4>
+                    </div>
+                    <button
+                      onClick={() => onNavigate(rec.actionView)}
+                      className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer text-center"
+                    >
+                      {rec.actionLabel}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -325,26 +347,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <div className="space-y-3">
-              {upcomingWebinars.map((webinar) => (
-                <div
-                  key={webinar.id}
-                  onClick={() => onNavigate('webinars')}
-                  className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-purple-300 dark:hover:border-purple-700 transition-all cursor-pointer space-y-2"
-                >
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-bold text-purple-600 dark:text-purple-400 uppercase">
-                      {webinar.tags[0] || 'TECH TALK'}
-                    </span>
-                    <span className="text-slate-400">{webinar.dateTime}</span>
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">
-                    {webinar.title}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Host: {webinar.speaker.name} ({webinar.speaker.company})
-                  </p>
+              {upcomingWebinars.length === 0 ? (
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-center">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">No live webinars scheduled currently.</p>
                 </div>
-              ))}
+              ) : (
+                upcomingWebinars.map((webinar) => (
+                  <div
+                    key={webinar.id}
+                    onClick={() => onNavigate('webinars')}
+                    className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-purple-300 dark:hover:border-purple-700 transition-all cursor-pointer space-y-2"
+                  >
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-purple-600 dark:text-purple-400 uppercase">
+                        {webinar.tags[0] || 'TECH TALK'}
+                      </span>
+                      <span className="text-slate-400">{webinar.dateTime}</span>
+                    </div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">
+                      {webinar.title}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Host: {webinar.speaker.name} ({webinar.speaker.company})
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -364,25 +392,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <div className="space-y-3">
-              {pendingAssignments.map((assignment) => (
-                <div
-                  key={assignment.id}
-                  onClick={() => onNavigate('assignments')}
-                  className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer space-y-1.5"
-                >
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-bold text-blue-600 dark:text-blue-400">
-                      {assignment.courseOrTopic}
-                    </span>
-                    <span className="text-amber-600 dark:text-amber-400 font-bold">
-                      Due: {assignment.dueDate}
-                    </span>
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">
-                    {assignment.title}
-                  </h4>
+              {pendingAssignments.length === 0 ? (
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-center">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">No pending assignments at this time.</p>
                 </div>
-              ))}
+              ) : (
+                pendingAssignments.map((assignment) => (
+                  <div
+                    key={assignment.id}
+                    onClick={() => onNavigate('assignments')}
+                    className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-blue-600 dark:text-blue-400">
+                        {assignment.courseOrTopic}
+                      </span>
+                      <span className="text-amber-600 dark:text-amber-400 font-bold">
+                        Due: {assignment.dueDate}
+                      </span>
+                    </div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-1">
+                      {assignment.title}
+                    </h4>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

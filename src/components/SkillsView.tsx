@@ -124,15 +124,24 @@ export const SkillsView: React.FC<SkillsViewProps> = ({
 
       {/* Skills Grid */}
       <div className="space-y-4">
-        {filteredSkills.map((skill) => {
-          const isFoundation = skill.category === 'foundation';
-          const isGap = skill.category === 'gap';
+        {filteredSkills.length === 0 ? (
+          <div className="bg-white dark:bg-[#1e293b] rounded-2xl p-8 text-center neu-raised border border-slate-100 dark:border-slate-800 space-y-3">
+            <span className="material-symbols-outlined text-4xl text-slate-400">workspace_premium</span>
+            <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">No Skills Found</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              Add your technical skills below or complete learning courses to track your proficiency matrix.
+            </p>
+          </div>
+        ) : (
+          filteredSkills.map((skill) => {
+            const isFoundation = skill.category === 'foundation';
+            const isGap = skill.category === 'gap';
 
-          return (
-            <div
-              key={skill.id}
-              className="bg-white dark:bg-[#1e293b] rounded-2xl p-5 neu-raised flex flex-col gap-3 border border-slate-100 dark:border-slate-800"
-            >
+            return (
+              <div
+                key={skill.id}
+                className="bg-white dark:bg-[#1e293b] rounded-2xl p-5 neu-raised flex flex-col gap-3 border border-slate-100 dark:border-slate-800"
+              >
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
                   <div
@@ -192,7 +201,7 @@ export const SkillsView: React.FC<SkillsViewProps> = ({
               </div>
             </div>
           );
-        })}
+        }))}
       </div>
 
       {/* Add Custom Skill */}

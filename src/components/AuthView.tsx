@@ -233,15 +233,6 @@ export const AuthView: React.FC<AuthViewProps> = ({
     }
   };
 
-  const handleDemoAccess = () => {
-    const email = 'guest.learner@university.edu';
-    onLoginSuccess('Guest Learner', email, {
-      college: 'National Institute of Technology',
-      targetRole: 'Full Stack Developer',
-    });
-    onNavigate('dashboard');
-  };
-
   return (
     <div className="min-h-screen w-full flex flex-col justify-between bg-[#f8fafc] dark:bg-[#0b1329] text-[#0f172a] dark:text-[#f8fafc] transition-colors duration-200 relative px-4 py-6 sm:py-10">
       {/* Top Header bar with Theme Toggle */}

@@ -149,10 +149,10 @@ export default function App() {
     }
 
     const nextUser: UserProfile = {
-      ...user,
+      ...initialUserProfile,
       ...existingProfile,
       name: name || existingProfile.name || (cleanEmail ? cleanEmail.split('@')[0] : 'Student Developer'),
-      email: cleanEmail || 'student@university.edu',
+      email: cleanEmail || '',
       ...(additionalData || {}),
     };
 
@@ -179,6 +179,7 @@ export default function App() {
     } catch (err) {
       console.error(err);
     }
+    setUser(initialUserProfile);
     setCurrentView('auth');
   };
 

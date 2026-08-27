@@ -20,12 +20,20 @@ export const isSupabaseConfigured = (): boolean => {
 };
 
 // Local storage persistent keys for synchronized real-user networking
-const STORAGE_KEYS = {
-  USERS: 'industryskill_connectivity_users_v2',
-  POSTS: 'industryskill_connectivity_posts_v2',
-  MESSAGES: 'industryskill_connectivity_messages_v2',
-  LIBRARY_REQUESTS: 'industryskill_library_requests_v2',
-  USER_LIBRARIES: 'industryskill_user_libraries_v2',
+const getStorageKey = (baseKey: string, user?: UserProfile): string => {
+  const userIdentifier = user?.email
+    ? user.email.toLowerCase().replace(/[^a-z0-9]/g, '_')
+    : 'default_account';
+  return `${baseKey}_${userIdentifier}`;
+};
+
+const BASE_STORAGE_KEYS = {
+  USERS: 'industryskill_connectivity_users_v3',
+  POSTS: 'industryskill_connectivity_posts_v3',
+  MESSAGES: 'industryskill_connectivity_messages_v3',
+  LIBRARY_REQUESTS: 'industryskill_library_requests_v3',
+  USER_LIBRARIES: 'industryskill_user_libraries_v3',
+  SETUP_DONE: 'industryskill_connectivity_setup_done_v3',
 };
 
 // Generate realistic real user learning libraries
@@ -144,8 +152,13 @@ export function getInitialUserLibraries(): Record<string, UserLibraryItem[]> {
 
 // Convert current user profile into a real NetworkUser
 export function mapProfileToNetworkUser(user: UserProfile, libraryItems?: UserLibraryItem[]): NetworkUser {
+  const generatedHandle = user.userId || user.username || (user.email ? `@${user.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_')}` : '@developer');
+  const cleanUsername = generatedHandle.startsWith('@') ? generatedHandle.substring(1) : generatedHandle;
+
   return {
     id: user.email ? `usr-${user.email.replace(/[^a-zA-Z0-9]/g, '_')}` : 'current-user-real',
+    userId: generatedHandle.startsWith('@') ? generatedHandle : `@${generatedHandle}`,
+    username: cleanUsername,
     name: user.name || (user.email ? user.email.split('@')[0] : 'Student Developer'),
     headline: user.headline || `${user.targetRole || 'Full Stack Engineer'} • ${user.college || 'Tech Institute'} '${user.gradYear || '2026'}`,
     avatarUrl: user.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
@@ -153,36 +166,21 @@ export function mapProfileToNetworkUser(user: UserProfile, libraryItems?: UserLi
     company: user.college || 'IndustrySkill Academy',
     role: user.targetRole || 'Full Stack Engineer',
     location: user.location || 'San Francisco, CA / Remote',
-    bio: `Passionate student developer targeting ${user.targetRole}. Actively building verified projects, solving distributed systems challenges, and completing hands-on learning tracks.`,
-    followersCount: user.followersCount || 124,
-    followingCount: user.followingCount || 86,
+    bio: user.bio || `Passionate student developer targeting ${user.targetRole || 'Full Stack Engineering'}. Actively building verified projects, solving distributed systems challenges, and collaborating with peers.`,
+    followersCount: user.followersCount ?? 4,
+    followingCount: user.followingCount ?? 2,
     isFollowing: false,
+    isFollower: false,
+    isFriend: false,
     isPrivate: Boolean(user.isPrivateAccount),
     isLibraryPrivate: Boolean(user.isPrivateAccount),
-    skills: ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Tailwind CSS', 'Git', 'System Design'],
+    skills: user.skills && user.skills.length > 0 ? user.skills : ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Tailwind CSS', 'Git', 'System Design'],
+    interests: user.interests && user.interests.length > 0 ? user.interests : ['AI & Machine Learning', 'Cloud Architecture', 'Distributed Systems', 'Full-Stack Web'],
     certificates: user.earnedCertificates || [],
     libraryItems: libraryItems || [],
-    projects: user.projects || [
-      {
-        id: 'proj-my-1',
-        title: 'Full Stack Collaborative Workspace',
-        description: 'Real-time collaborative task manager with WebSocket streaming and PostgreSQL backend.',
-        tags: ['React', 'Node.js', 'PostgreSQL', 'Tailwind'],
-        githubUrl: user.githubUrl || 'https://github.com',
-        date: '2026',
-        stars: 42,
-      },
-    ],
+    projects: user.projects || [],
     internships: user.internships || [],
-    achievements: user.achievements || [
-      {
-        id: 'ach-my-1',
-        title: '70%+ Career Readiness Milestone',
-        issuer: 'IndustrySkill Evaluation',
-        date: 'Feb 2026',
-        badge: '🎯 High Readiness Candidate',
-      },
-    ],
+    achievements: user.achievements || [],
     onlineStatus: 'online',
     currentlyStudyingStory: {
       topic: 'Full-Stack Distributed Systems',
@@ -195,16 +193,80 @@ export function mapProfileToNetworkUser(user: UserProfile, libraryItems?: UserLi
 
 // Service methods
 export const connectivityService = {
-  // Load Users with Privacy, Library, and Follow state
+  // Check if profile setup is completed for the current authenticated user
+  isSetupCompleted(user: UserProfile): boolean {
+    if (user.connectivitySetupCompleted) return true;
+    try {
+      const key = getStorageKey(BASE_STORAGE_KEYS.SETUP_DONE, user);
+      return localStorage.getItem(key) === 'true';
+    } catch {
+      return false;
+    }
+  },
+
+  // Mark profile setup completed with new data
+  completeSetup(
+    user: UserProfile,
+    data: {
+      userId: string;
+      name: string;
+      avatarUrl: string;
+      skills: string[];
+      interests: string[];
+      headline?: string;
+      bio?: string;
+    }
+  ): void {
+    try {
+      const key = getStorageKey(BASE_STORAGE_KEYS.SETUP_DONE, user);
+      localStorage.setItem(key, 'true');
+
+      // Update user in users list if exists or ensure currentUserMapped has this data
+      const users = this.getUsers(user);
+      const currentMapped = mapProfileToNetworkUser({
+        ...user,
+        userId: data.userId,
+        name: data.name,
+        avatarUrl: data.avatarUrl,
+        skills: data.skills,
+        interests: data.interests,
+        headline: data.headline,
+        bio: data.bio,
+      });
+
+      const updatedUsers = users.map((u) => {
+        if (u.id === currentMapped.id || u.id === 'current-user-real') {
+          return {
+            ...u,
+            userId: data.userId,
+            name: data.name,
+            avatarUrl: data.avatarUrl,
+            skills: data.skills,
+            interests: data.interests,
+            headline: data.headline || u.headline,
+            bio: data.bio || u.bio,
+          };
+        }
+        return u;
+      });
+
+      this.saveUsers(updatedUsers, user);
+    } catch (e) {
+      console.error('Error completing connectivity setup:', e);
+    }
+  },
+
+  // Load Users with Privacy, Library, and Follow state (isolated per user)
   getUsers(currentUser: UserProfile): NetworkUser[] {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.USERS);
+      const storageKey = getStorageKey(BASE_STORAGE_KEYS.USERS, currentUser);
+      const stored = localStorage.getItem(storageKey);
       let users: NetworkUser[] = stored ? JSON.parse(stored) : initialNetworkUsers;
 
-      const libraries = this.getUserLibraries();
-      const currentReqs = this.getAccessRequests();
+      const libraries = this.getUserLibraries(currentUser);
+      const currentReqs = this.getAccessRequests(currentUser);
 
-      // Ensure libraryItems are populated
+      // Ensure libraryItems & follower/friend states are calculated
       users = users.map((u) => {
         const userLib = libraries[u.id] || [];
         const isApproved = currentReqs.some(
@@ -214,9 +276,13 @@ export const connectivityService = {
           (r) => r.targetUserId === u.id && r.status === 'pending'
         );
 
+        // A user is a Friend if they are mutually followed
+        const isFriend = Boolean(u.isFollowing && u.isFollower);
+
         return {
           ...u,
           libraryItems: userLib,
+          isFriend,
           isLibraryPrivate: u.isPrivate !== undefined ? u.isPrivate : false,
           hasAccessToLibrary: !u.isPrivate || isApproved,
           isAccessRequested: isRequested,
@@ -230,43 +296,50 @@ export const connectivityService = {
     }
   },
 
-  // Save Users
-  saveUsers(users: NetworkUser[]): void {
+  // Save Users (isolated per user)
+  saveUsers(users: NetworkUser[], currentUser?: UserProfile): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+      const storageKey = getStorageKey(BASE_STORAGE_KEYS.USERS, currentUser);
+      localStorage.setItem(storageKey, JSON.stringify(users));
     } catch (e) {
       console.error('Error saving users:', e);
     }
   },
 
   // Get all libraries
-  getUserLibraries(): Record<string, UserLibraryItem[]> {
+  getUserLibraries(currentUser?: UserProfile): Record<string, UserLibraryItem[]> {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.USER_LIBRARIES);
+      const storageKey = getStorageKey(BASE_STORAGE_KEYS.USER_LIBRARIES, currentUser);
+      const stored = localStorage.getItem(storageKey);
       if (stored) return JSON.parse(stored);
     } catch (e) {
       console.error('Error fetching user libraries:', e);
     }
     const initial = getInitialUserLibraries();
-    localStorage.setItem(STORAGE_KEYS.USER_LIBRARIES, JSON.stringify(initial));
+    try {
+      const storageKey = getStorageKey(BASE_STORAGE_KEYS.USER_LIBRARIES, currentUser);
+      localStorage.setItem(storageKey, JSON.stringify(initial));
+    } catch {}
     return initial;
   },
 
   // Save library for specific user
-  saveUserLibrary(userId: string, items: UserLibraryItem[]): void {
+  saveUserLibrary(userId: string, items: UserLibraryItem[], currentUser?: UserProfile): void {
     try {
-      const all = this.getUserLibraries();
+      const all = this.getUserLibraries(currentUser);
       all[userId] = items;
-      localStorage.setItem(STORAGE_KEYS.USER_LIBRARIES, JSON.stringify(all));
+      const storageKey = getStorageKey(BASE_STORAGE_KEYS.USER_LIBRARIES, currentUser);
+      localStorage.setItem(storageKey, JSON.stringify(all));
     } catch (e) {
       console.error('Error saving user library:', e);
     }
   },
 
-  // Load Posts
+  // Load Posts (isolated per user)
   getPosts(currentUser: UserProfile): NetworkPost[] {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.POSTS);
+      const storageKey = getStorageKey(BASE_STORAGE_KEYS.POSTS, currentUser);
+      const stored = localStorage.getItem(storageKey);
       if (stored) {
         return JSON.parse(stored);
       }
@@ -276,23 +349,27 @@ export const connectivityService = {
     return initialNetworkPosts;
   },
 
-  // Save Posts
-  savePosts(posts: NetworkPost[]): void {
+  // Save Posts (isolated per user)
+  savePosts(posts: NetworkPost[], currentUser?: UserProfile): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(posts));
+      const storageKey = getStorageKey(BASE_STORAGE_KEYS.POSTS, currentUser);
+      localStorage.setItem(storageKey, JSON.stringify(posts));
     } catch (e) {
       console.error('Error saving posts:', e);
     }
   },
 
   // Create a new Post
-  createPost(currentUser: UserProfile, payload: {
-    content: string;
-    imageUrl?: string;
-    codeSnippet?: { language: string; code: string };
-    attachedCertificate?: GeneratedCertificate;
-    tags?: string[];
-  }): NetworkPost {
+  createPost(
+    currentUser: UserProfile,
+    payload: {
+      content: string;
+      imageUrl?: string;
+      codeSnippet?: { language: string; code: string };
+      attachedCertificate?: GeneratedCertificate;
+      tags?: string[];
+    }
+  ): NetworkPost {
     const currentMapped = mapProfileToNetworkUser(currentUser);
     const newPost: NetworkPost = {
       id: `post-${Date.now()}`,
@@ -321,7 +398,7 @@ export const connectivityService = {
 
     const existingPosts = this.getPosts(currentUser);
     const updated = [newPost, ...existingPosts];
-    this.savePosts(updated);
+    this.savePosts(updated, currentUser);
     return newPost;
   },
 
@@ -339,7 +416,7 @@ export const connectivityService = {
       }
       return p;
     });
-    this.savePosts(updated);
+    this.savePosts(updated, currentUser);
     return updated;
   },
 
@@ -368,14 +445,15 @@ export const connectivityService = {
       }
       return p;
     });
-    this.savePosts(updated);
+    this.savePosts(updated, currentUser);
     return updated;
   },
 
-  // Conversations & Direct Messaging
+  // Conversations & Direct Messaging (isolated per user)
   getConversations(currentUser: UserProfile): NetworkConversation[] {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.MESSAGES);
+      const storageKey = getStorageKey(BASE_STORAGE_KEYS.MESSAGES, currentUser);
+      const stored = localStorage.getItem(storageKey);
       if (stored) {
         return JSON.parse(stored);
       }
@@ -385,9 +463,10 @@ export const connectivityService = {
     return initialConversations;
   },
 
-  saveConversations(convs: NetworkConversation[]): void {
+  saveConversations(convs: NetworkConversation[], currentUser?: UserProfile): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(convs));
+      const storageKey = getStorageKey(BASE_STORAGE_KEYS.MESSAGES, currentUser);
+      localStorage.setItem(storageKey, JSON.stringify(convs));
     } catch (e) {
       console.error('Error saving conversations:', e);
     }
@@ -444,14 +523,15 @@ export const connectivityService = {
       });
     }
 
-    this.saveConversations(updated);
+    this.saveConversations(updated, currentUser);
     return updated;
   },
 
   // Follow Requests and Library Privacy Access Requests
-  getAccessRequests(): LibraryAccessRequest[] {
+  getAccessRequests(currentUser?: UserProfile): LibraryAccessRequest[] {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.LIBRARY_REQUESTS);
+      const storageKey = getStorageKey(BASE_STORAGE_KEYS.LIBRARY_REQUESTS, currentUser);
+      const stored = localStorage.getItem(storageKey);
       if (stored) {
         return JSON.parse(stored);
       }
@@ -472,9 +552,10 @@ export const connectivityService = {
     ];
   },
 
-  saveAccessRequests(requests: LibraryAccessRequest[]): void {
+  saveAccessRequests(requests: LibraryAccessRequest[], currentUser?: UserProfile): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.LIBRARY_REQUESTS, JSON.stringify(requests));
+      const storageKey = getStorageKey(BASE_STORAGE_KEYS.LIBRARY_REQUESTS, currentUser);
+      localStorage.setItem(storageKey, JSON.stringify(requests));
     } catch (e) {
       console.error('Error saving access requests:', e);
     }
@@ -486,7 +567,7 @@ export const connectivityService = {
     currentUser: UserProfile
   ): { success: boolean; request: LibraryAccessRequest } {
     const currentMapped = mapProfileToNetworkUser(currentUser);
-    const existing = this.getAccessRequests();
+    const existing = this.getAccessRequests(currentUser);
 
     // Check if already requested
     const alreadyReq = existing.find(
@@ -508,41 +589,44 @@ export const connectivityService = {
     };
 
     const updated = [newReq, ...existing];
-    this.saveAccessRequests(updated);
+    this.saveAccessRequests(updated, currentUser);
     return { success: true, request: newReq };
   },
 
   // Approve or Decline Access Request
   respondToAccessRequest(
     requestId: string,
-    decision: 'approved' | 'declined'
+    decision: 'approved' | 'declined',
+    currentUser?: UserProfile
   ): LibraryAccessRequest[] {
-    const existing = this.getAccessRequests();
+    const existing = this.getAccessRequests(currentUser);
     const updated = existing.map((r) => {
       if (r.id === requestId) {
         return { ...r, status: decision };
       }
       return r;
     });
-    this.saveAccessRequests(updated);
+    this.saveAccessRequests(updated, currentUser);
     return updated;
   },
 
-  // Toggle user follow
+  // Toggle user follow / connect
   toggleFollow(targetUserId: string, currentUser: UserProfile): NetworkUser[] {
     const users = this.getUsers(currentUser);
     const updated = users.map((u) => {
       if (u.id === targetUserId) {
         const nextState = !u.isFollowing;
+        const isFriend = Boolean(nextState && u.isFollower);
         return {
           ...u,
           isFollowing: nextState,
+          isFriend,
           followersCount: nextState ? u.followersCount + 1 : Math.max(0, u.followersCount - 1),
         };
       }
       return u;
     });
-    this.saveUsers(updated);
+    this.saveUsers(updated, currentUser);
     return updated;
   },
 
@@ -556,6 +640,6 @@ export const connectivityService = {
       }
       return u;
     });
-    this.saveUsers(updated);
+    this.saveUsers(updated, currentUser);
   },
 };

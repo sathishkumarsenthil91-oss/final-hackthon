@@ -11,6 +11,8 @@ import {
 } from '../types';
 import { connectivityService, mapProfileToNetworkUser, isSupabaseConfigured } from '../services/supabaseService';
 import { CertificateGenerationModal } from './CertificateGenerationModal';
+import { ConnectivityProfileSetupModal } from './connectivity/ConnectivityProfileSetupModal';
+import { ConnectivityDirectory } from './connectivity/ConnectivityDirectory';
 
 interface ConnectivitySubsectionProps {
   user: UserProfile;
@@ -44,6 +46,8 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
   const [chatMessageText, setChatMessageText] = useState('');
 
   // Modals
+  const [showProfileSetupModal, setShowProfileSetupModal] = useState(false);
+  const [isFirstTimeSetup, setIsFirstTimeSetup] = useState(false);
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [showAccessRequestsModal, setShowAccessRequestsModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
@@ -125,7 +129,41 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
   useEffect(() => {
     reloadData();
+    if (!connectivityService.isSetupCompleted(user)) {
+      setIsFirstTimeSetup(true);
+      setShowProfileSetupModal(true);
+    }
   }, [user]);
+
+  const handleCompleteProfileSetup = (data: {
+    userId: string;
+    name: string;
+    avatarUrl: string;
+    skills: string[];
+    interests: string[];
+    headline?: string;
+    bio?: string;
+  }) => {
+    connectivityService.completeSetup(user, data);
+    if (onUpdateUser) {
+      onUpdateUser({
+        userId: data.userId,
+        username: data.userId.replace(/^@/, ''),
+        name: data.name,
+        avatarUrl: data.avatarUrl,
+        skills: data.skills,
+        interests: data.interests,
+        targetRole: data.headline,
+        headline: data.headline,
+        bio: data.bio,
+        connectivitySetupCompleted: true,
+      });
+    }
+    setShowProfileSetupModal(false);
+    setIsFirstTimeSetup(false);
+    reloadData();
+    showToast('✨ Connectivity profile successfully updated!');
+  };
 
   // Current mapped user
   const currentUserMapped = mapProfileToNetworkUser(user, userLibraries[user.email ? `usr-${user.email.replace(/[^a-zA-Z0-9]/g, '_')}` : 'current-user-real']);
@@ -398,6 +436,18 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
               <span className="material-symbols-outlined text-[18px] sm:text-[20px] text-emerald-500">image</span>
             </div>
           </div>
+
+          {/* Network Directory & Peer Discovery */}
+          <ConnectivityDirectory
+            users={users}
+            onSelectUser={(targetUser) => {
+              setViewingUser(targetUser);
+              setActiveTab('profile');
+            }}
+            onFollowToggle={handleFollowToggle}
+            onOpenChat={openChatWithUser}
+          />
+
 
           {/* Feed Filter Chips */}
           <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
@@ -1106,11 +1156,14 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   {isViewingSelf ? (
                     <>
                       <button
-                        onClick={() => setShowEditProfileModal(true)}
-                        className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer border border-slate-200 dark:border-slate-700"
+                        onClick={() => {
+                          setIsFirstTimeSetup(false);
+                          setShowProfileSetupModal(true);
+                        }}
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
                       >
                         <span className="material-symbols-outlined text-[16px]">manage_accounts</span>
-                        Edit Profile
+                        Edit Profile & Handle
                       </button>
                       <button
                         onClick={() => setShowAccessRequestsModal(true)}
@@ -1134,7 +1187,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                         <span className="material-symbols-outlined text-[16px]">
                           {activeProfile.isFollowing ? 'check' : 'person_add'}
                         </span>
-                        {activeProfile.isFollowing ? 'Following' : 'Follow'}
+                        {activeProfile.isFollowing ? 'Following' : '+ Follow'}
                       </button>
 
                       {/* Message Button */}
@@ -1150,7 +1203,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                 </div>
               </div>
 
-              {/* Name, Headline & Bio */}
+              {/* Name, Handle, Headline & Bio */}
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white">
@@ -1159,6 +1212,20 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   <span className="material-symbols-outlined text-blue-500 text-[18px] sm:text-[20px]" title="Verified Profile">
                     verified
                   </span>
+                  
+                  {/* Relationship Badges */}
+                  {!isViewingSelf && (activeProfile.isFriend || (activeProfile.isFollowing && activeProfile.isFollower)) && (
+                    <span className="px-2.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[10px] font-black uppercase flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px]">handshake</span>
+                      Friend / Connected
+                    </span>
+                  )}
+                  {!isViewingSelf && !(activeProfile.isFriend || (activeProfile.isFollowing && activeProfile.isFollower)) && activeProfile.isFollower && (
+                    <span className="px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-800 text-[10px] font-black uppercase">
+                      Follows You
+                    </span>
+                  )}
+
                   {activeProfile.isPrivate && (
                     <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center gap-1">
                       <span className="material-symbols-outlined text-[12px]">lock</span>
@@ -1167,7 +1234,25 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   )}
                 </div>
 
-                <p className="text-xs sm:text-sm font-semibold text-purple-600 dark:text-purple-400 mt-0.5 break-words">
+                {/* Unique User ID Handle with Copy */}
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="font-mono text-xs sm:text-sm font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50 px-2.5 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">alternate_email</span>
+                    {activeProfile.userId || `@${activeProfile.username || 'developer'}`}
+                  </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(activeProfile.userId || `@${activeProfile.username || 'developer'}`);
+                      showToast('User ID copied to clipboard!');
+                    }}
+                    className="text-slate-400 hover:text-purple-600 p-1 cursor-pointer transition-colors"
+                    title="Copy User ID Handle"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">content_copy</span>
+                  </button>
+                </div>
+
+                <p className="text-xs sm:text-sm font-semibold text-purple-600 dark:text-purple-400 mt-1 break-words">
                   {activeProfile.headline}
                 </p>
 
@@ -1179,6 +1264,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   {activeProfile.bio}
                 </p>
               </div>
+
 
               {/* Stats Bar */}
               <div className="flex items-center justify-between sm:justify-start gap-4 sm:gap-6 mt-4 pt-3.5 sm:pt-4 border-t border-slate-100 dark:border-slate-800 text-xs overflow-x-auto">
@@ -1262,6 +1348,28 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   ))}
                 </div>
               </div>
+
+              {/* Interests & Focus Areas */}
+              {activeProfile.interests && activeProfile.interests.length > 0 && (
+                <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-3">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-emerald-600">interests</span>
+                    Interests & Focus Areas
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {activeProfile.interests.map((interest, idx) => (
+                      <span
+                        key={idx}
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5 shadow-xs"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">tag</span>
+                        {interest}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
 
               {/* Shipped Projects */}
               {activeProfile.projects && activeProfile.projects.length > 0 && (
@@ -2024,6 +2132,22 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
           onCertificateClaimed={() => {}}
         />
       )}
+
+      {/* 6. First-Time & Edit Connectivity Profile Setup Modal */}
+      {showProfileSetupModal && (
+        <ConnectivityProfileSetupModal
+          user={user}
+          existingUsers={users}
+          isFirstTime={isFirstTimeSetup}
+          onComplete={handleCompleteProfileSetup}
+          onClose={() => {
+            if (!isFirstTimeSetup) {
+              setShowProfileSetupModal(false);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
+
