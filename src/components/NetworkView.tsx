@@ -20,6 +20,7 @@ import {
   loadFollowRequests,
   saveFollowRequests,
 } from '../services/networkService';
+import { connectivityService } from '../services/supabaseService';
 
 interface NetworkViewProps {
   user: UserProfile;
@@ -86,6 +87,63 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
   useEffect(() => {
     saveFollowRequests(followRequests);
   }, [followRequests]);
+
+  // Real-Time Supabase Message & Broadcast Subscription Listener
+  useEffect(() => {
+    const unsubscribe = connectivityService.subscribeToRealtimeChat(
+      user,
+      (newMsg, participant) => {
+        setConversations((prevConvs) => {
+          const exists = prevConvs.find((c) => c.participant.id === participant.id);
+          if (exists) {
+            return prevConvs.map((c) =>
+              c.participant.id === participant.id
+                ? {
+                    ...c,
+                    participant,
+                    lastMessage: newMsg.content,
+                    lastMessageTime: newMsg.timestamp,
+                    unreadCount: (c.unreadCount || 0) + 1,
+                    messages: [...c.messages, newMsg],
+                  }
+                : c
+            );
+          } else {
+            return [
+              {
+                id: `conv-${participant.id}`,
+                participant,
+                lastMessage: newMsg.content,
+                lastMessageTime: newMsg.timestamp,
+                unreadCount: 1,
+                messages: [newMsg],
+              },
+              ...prevConvs,
+            ];
+          }
+        });
+
+        // Also update currently active open chat window if relevant
+        setActiveConversation((currentActive) => {
+          if (currentActive && currentActive.participant.id === participant.id) {
+            return {
+              ...currentActive,
+              lastMessage: newMsg.content,
+              lastMessageTime: newMsg.timestamp,
+              messages: [...currentActive.messages, newMsg],
+            };
+          }
+          return currentActive;
+        });
+
+        showToast(`💬 New message from ${participant.name}: "${newMsg.content.substring(0, 32)}..."`);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user]);
 
   // Handle initial user view if passed
   useEffect(() => {
@@ -387,70 +445,59 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
   };
 
   // Real-Time Direct Messaging
-  const handleSendMessage = (e?: React.FormEvent) => {
+  const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!messageInput.trim() || !activeConversation) return;
 
     const userMsgContent = messageInput.trim();
-    const newMsg = {
-      id: `msg-${Date.now()}`,
-      senderId: 'current-user',
-      receiverId: activeConversation.participant.id,
-      content: userMsgContent,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isRead: true,
-    };
+    setMessageInput('');
 
-    const updatedConvs = conversations.map((conv) => {
-      if (conv.id === activeConversation.id) {
-        return {
-          ...conv,
-          lastMessage: userMsgContent,
-          lastMessageTime: 'Just now',
-          messages: [...conv.messages, newMsg],
-        };
-      }
-      return conv;
-    });
+    // Send through connectivityService which broadcasts to Supabase Realtime and updates database
+    const { updatedConversations, newMsg } = await connectivityService.sendMessage(
+      activeConversation.participant,
+      userMsgContent,
+      user
+    );
 
-    setConversations(updatedConvs);
+    setConversations(updatedConversations);
     setActiveConversation((prev) =>
       prev ? { ...prev, lastMessage: userMsgContent, lastMessageTime: 'Just now', messages: [...prev.messages, newMsg] } : null
     );
-    setMessageInput('');
 
-    // Simulate responsive reply from the mentor / recruiter
-    setIsTypingReply(true);
-    setTimeout(() => {
-      const replyContent = generateSimulatedReply(activeConversation.participant, userMsgContent);
-      const replyMsg = {
-        id: `reply-${Date.now()}`,
-        senderId: activeConversation.participant.id,
-        receiverId: 'current-user',
-        content: replyContent,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isRead: true,
-      };
+    // If talking with a mentor/recruiter profile, provide simulated contextual guidance if offline
+    if (activeConversation.participant.isMentor || activeConversation.participant.isRecruiter) {
+      setIsTypingReply(true);
+      setTimeout(() => {
+        const replyContent = generateSimulatedReply(activeConversation.participant, userMsgContent);
+        const replyMsg = {
+          id: `reply-${Date.now()}`,
+          senderId: activeConversation.participant.id,
+          receiverId: 'current-user',
+          content: replyContent,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isRead: true,
+        };
 
-      setConversations((prevList) =>
-        prevList.map((conv) => {
-          if (conv.id === activeConversation.id) {
-            return {
-              ...conv,
-              lastMessage: replyContent,
-              lastMessageTime: 'Just now',
-              messages: [...conv.messages, replyMsg],
-            };
-          }
-          return conv;
-        })
-      );
+        setConversations((prevList) =>
+          prevList.map((conv) => {
+            if (conv.id === activeConversation.id) {
+              return {
+                ...conv,
+                lastMessage: replyContent,
+                lastMessageTime: 'Just now',
+                messages: [...conv.messages, replyMsg],
+              };
+            }
+            return conv;
+          })
+        );
 
-      setActiveConversation((prev) =>
-        prev ? { ...prev, lastMessage: replyContent, lastMessageTime: 'Just now', messages: [...prev.messages, replyMsg] } : null
-      );
-      setIsTypingReply(false);
-    }, 1800);
+        setActiveConversation((prev) =>
+          prev ? { ...prev, lastMessage: replyContent, lastMessageTime: 'Just now', messages: [...prev.messages, replyMsg] } : null
+        );
+        setIsTypingReply(false);
+      }, 1800);
+    }
   };
 
   const generateSimulatedReply = (participant: NetworkUser, prompt: string): string => {

@@ -21,6 +21,7 @@ import { SafetyCenterView } from './components/SafetyCenterView';
 import { SettingsView } from './components/SettingsView';
 import { RoadmapView } from './components/RoadmapView';
 import { NetworkView } from './components/NetworkView';
+import { ConnectivitySubsection } from './components/ConnectivitySubsection';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { LoginModal } from './components/LoginModal';
 import { SmartCopilotDrawer } from './components/SmartCopilotDrawer';
@@ -314,10 +315,10 @@ export default function App() {
           </div>
         )}
 
-        {/* 9b. Professional Career Network (SkillNet) */}
+        {/* 9b. Professional Career Network (SkillNet / Connectivity) */}
         {currentView === 'network' && (
           <div className="pt-20 md:pt-24 pb-24">
-            <NetworkView
+            <ConnectivitySubsection
               user={user}
               onNavigate={handleNavigate}
               onUpdateUser={handleUpdateProfile}

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { NetworkUser } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { NetworkUser, UserProfile } from '../../types';
+import { connectivityService } from '../../services/supabaseService';
 
 interface ConnectivityDirectoryProps {
   users: NetworkUser[];
+  currentUser?: UserProfile;
   onSelectUser: (user: NetworkUser) => void;
   onFollowToggle: (user: NetworkUser) => void;
   onOpenChat: (user: NetworkUser) => void;
@@ -10,25 +12,57 @@ interface ConnectivityDirectoryProps {
 
 export const ConnectivityDirectory: React.FC<ConnectivityDirectoryProps> = ({
   users,
+  currentUser,
   onSelectUser,
   onFollowToggle,
   onOpenChat,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTab, setFilterTab] = useState<'all' | 'friends' | 'followers' | 'following'>('all');
+  const [liveSearchResults, setLiveSearchResults] = useState<NetworkUser[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const friendsCount = users.filter((u) => u.isFriend || (u.isFollowing && u.isFollower)).length;
-  const followersCount = users.filter((u) => u.isFollower).length;
-  const followingCount = users.filter((u) => u.isFollowing).length;
+  // Live Supabase query when searching with debounce
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setLiveSearchResults(null);
+      setIsSearching(false);
+      return;
+    }
 
-  const filteredUsers = users.filter((u) => {
+    setIsSearching(true);
+    const timer = setTimeout(async () => {
+      if (currentUser) {
+        try {
+          const results = await connectivityService.searchUsers(searchQuery, currentUser);
+          setLiveSearchResults(results);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setIsSearching(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, currentUser]);
+
+  const activeUserList = liveSearchResults !== null ? liveSearchResults : users;
+
+  const friendsCount = activeUserList.filter((u) => u.isFriend || (u.isFollowing && u.isFollower)).length;
+  const followersCount = activeUserList.filter((u) => u.isFollower).length;
+  const followingCount = activeUserList.filter((u) => u.isFollowing).length;
+
+  const filteredUsers = activeUserList.filter((u) => {
     // Tab filter
     if (filterTab === 'friends' && !(u.isFriend || (u.isFollowing && u.isFollower))) return false;
     if (filterTab === 'followers' && !u.isFollower) return false;
     if (filterTab === 'following' && !u.isFollowing) return false;
 
-    // Search query filter: by User ID, username, name, skills, interests, company
-    if (searchQuery.trim()) {
+    // Local filter if liveSearchResults is not used
+    if (liveSearchResults === null && searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       const matchesId = u.userId?.toLowerCase().includes(q) || u.username?.toLowerCase().includes(q);
       const matchesName = u.name.toLowerCase().includes(q);
@@ -51,21 +85,21 @@ export const ConnectivityDirectory: React.FC<ConnectivityDirectoryProps> = ({
             Network Directory & Peer Discovery
           </h3>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            Search peers by User ID handle, view verified credentials, connect, and chat privately.
+            Search across registered Supabase members by handle, skills, and direct message in real-time.
           </p>
         </div>
 
         {/* Search Input */}
         <div className="relative sm:w-72">
           <span className="material-symbols-outlined text-[18px] text-slate-400 absolute left-3 top-2.5">
-            search
+            {isSearching ? 'sync' : 'search'}
           </span>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by @handle, skill, name..."
-            className="w-full bg-slate-100 dark:bg-slate-800/70 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none border border-slate-200/60 dark:border-slate-700 focus:border-purple-500"
+            className="w-full bg-slate-100 dark:bg-slate-800/70 rounded-xl pl-9 pr-8 py-2 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none border border-slate-200/60 dark:border-slate-700 focus:border-purple-500"
           />
           {searchQuery && (
             <button
@@ -81,7 +115,7 @@ export const ConnectivityDirectory: React.FC<ConnectivityDirectoryProps> = ({
       {/* Filter Tabs */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar border-b border-slate-100 dark:border-slate-800">
         {[
-          { id: 'all', label: 'All Members', count: users.length, icon: 'public' },
+          { id: 'all', label: 'All Members', count: activeUserList.length, icon: 'public' },
           { id: 'friends', label: 'Friends & Mutuals', count: friendsCount, icon: 'handshake' },
           { id: 'followers', label: 'Followers', count: followersCount, icon: 'group' },
           { id: 'following', label: 'Following', count: followingCount, icon: 'person_check' },
@@ -113,15 +147,17 @@ export const ConnectivityDirectory: React.FC<ConnectivityDirectoryProps> = ({
       {/* User Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
         {filteredUsers.length === 0 ? (
-          <div className="col-span-full text-center py-10 text-slate-400">
+          <div className="col-span-full text-center py-12 px-4 text-slate-400 bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
             <span className="material-symbols-outlined text-4xl text-purple-400 mb-2">
               person_search
             </span>
             <h4 className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
-              No matching members found
+              {searchQuery ? 'No matching registered members found' : 'No peer profiles found yet'}
             </h4>
-            <p className="text-[11px] text-slate-500 mt-1">
-              Try searching by a different @handle, technical skill, or interest area.
+            <p className="text-[11px] text-slate-500 mt-1 max-w-sm mx-auto">
+              {searchQuery
+                ? 'Try searching by a different handle, college, or technical skill.'
+                : 'Registered Supabase users who create an account or verify their skills will appear here automatically.'}
             </p>
           </div>
         ) : (
@@ -155,7 +191,10 @@ export const ConnectivityDirectory: React.FC<ConnectivityDirectoryProps> = ({
                           <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white group-hover:text-purple-600 transition-colors truncate">
                             {member.name}
                           </h4>
-                          <span className="material-symbols-outlined text-[15px] text-blue-500 shrink-0" title="Verified Member">
+                          <span
+                            className="material-symbols-outlined text-[15px] text-blue-500 shrink-0"
+                            title="Verified Member"
+                          >
                             verified
                           </span>
                         </div>
@@ -163,7 +202,7 @@ export const ConnectivityDirectory: React.FC<ConnectivityDirectoryProps> = ({
                           <span>{member.userId || `@${member.username}`}</span>
                         </div>
                         <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                          {member.role} @ {member.company}
+                          {member.role} {member.company ? `@ ${member.company}` : ''}
                         </p>
                       </div>
                     </div>

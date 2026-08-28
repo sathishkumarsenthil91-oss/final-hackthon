@@ -1,14 +1,17 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { supabase as existingSupabaseClient } from '../supabaseClient';
-import { NetworkUser, NetworkPost, NetworkConversation, NetworkMessage, UserLibraryItem, LibraryAccessRequest, UserProfile, GeneratedCertificate } from '../types';
-import { initialNetworkUsers, initialNetworkPosts, initialConversations } from './networkService';
-
-// Supabase Environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+import {
+  NetworkUser,
+  NetworkPost,
+  NetworkConversation,
+  NetworkMessage,
+  UserLibraryItem,
+  LibraryAccessRequest,
+  UserProfile,
+  GeneratedCertificate,
+} from '../types';
 
 export function getSupabaseClient(): SupabaseClient | null {
-  // Reuse existing singleton Supabase client
   if (existingSupabaseClient) {
     return existingSupabaseClient as unknown as SupabaseClient;
   }
@@ -16,10 +19,10 @@ export function getSupabaseClient(): SupabaseClient | null {
 }
 
 export const isSupabaseConfigured = (): boolean => {
-  return Boolean((supabaseUrl && supabaseAnonKey) || existingSupabaseClient);
+  return Boolean(existingSupabaseClient);
 };
 
-// Local storage persistent keys for synchronized real-user networking
+// Local storage persistent keys for backup / fast offline cache
 const getStorageKey = (baseKey: string, user?: UserProfile): string => {
   const userIdentifier = user?.email
     ? user.email.toLowerCase().replace(/[^a-z0-9]/g, '_')
@@ -28,172 +31,138 @@ const getStorageKey = (baseKey: string, user?: UserProfile): string => {
 };
 
 const BASE_STORAGE_KEYS = {
-  USERS: 'industryskill_connectivity_users_v3',
-  POSTS: 'industryskill_connectivity_posts_v3',
-  MESSAGES: 'industryskill_connectivity_messages_v3',
-  LIBRARY_REQUESTS: 'industryskill_library_requests_v3',
-  USER_LIBRARIES: 'industryskill_user_libraries_v3',
-  SETUP_DONE: 'industryskill_connectivity_setup_done_v3',
+  USERS: 'industryskill_connectivity_users_v4',
+  POSTS: 'industryskill_connectivity_posts_v4',
+  MESSAGES: 'industryskill_connectivity_messages_v4',
+  LIBRARY_REQUESTS: 'industryskill_library_requests_v4',
+  USER_LIBRARIES: 'industryskill_user_libraries_v4',
+  SETUP_DONE: 'industryskill_connectivity_setup_done_v4',
 };
 
-// Generate realistic real user learning libraries
-export function getInitialUserLibraries(): Record<string, UserLibraryItem[]> {
+// Map a raw Supabase profile row into a clean NetworkUser object
+export function mapRowToNetworkUser(row: any, currentUserId?: string): NetworkUser {
+  const rawHandle = row.username || (row.email ? row.email.split('@')[0] : 'developer');
+  const cleanUsername = rawHandle.replace(/^@/, '');
+  const handleWithAt = `@${cleanUsername}`;
+
+  let skillsArray: string[] = [];
+  if (Array.isArray(row.skills)) {
+    skillsArray = row.skills;
+  } else if (typeof row.skills === 'string') {
+    try {
+      skillsArray = JSON.parse(row.skills);
+    } catch {
+      skillsArray = row.skills.split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
+  }
+  if (!skillsArray.length) {
+    skillsArray = ['Software Engineering', 'TypeScript', 'React'];
+  }
+
+  let interestsArray: string[] = [];
+  if (Array.isArray(row.interests)) {
+    interestsArray = row.interests;
+  } else if (typeof row.interests === 'string') {
+    try {
+      interestsArray = JSON.parse(row.interests);
+    } catch {
+      interestsArray = row.interests.split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
+  }
+
   return {
-    'user-priya-sharma': [
-      {
-        id: 'lib-ps-1',
-        type: 'course',
-        title: 'Advanced Cloud Microservices & Scalability',
-        providerOrChannel: 'IndustrySkill Academic',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&auto=format&fit=crop&q=80',
-        progressPercentage: 100,
-        currentLessonOrChapter: 'Completed (All 8 Modules)',
-        totalDurationOrModules: '8h 00m • 8 Modules',
-        skillsCovered: ['Kubernetes', 'Cloud Native', 'Distributed Tracing', 'gRPC'],
-        lastStudiedAt: 'Yesterday',
-        isCompleted: true,
-        notesCount: 14,
-        certificateSerial: 'IS-CERT-2026-CRS-89214',
-      },
-      {
-        id: 'lib-ps-2',
-        type: 'youtube_track',
-        title: 'Golang Concurrency Patterns & Channels Deep Dive',
-        providerOrChannel: 'GopherAcademy',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&auto=format&fit=crop&q=80',
-        progressPercentage: 78,
-        currentLessonOrChapter: 'Module 4: Mutex Contention vs Worker Pools',
-        totalDurationOrModules: '3h 45m',
-        skillsCovered: ['Go', 'Concurrency', 'Goroutines', 'Channel Buffers'],
-        lastStudiedAt: '2 days ago',
-        isCompleted: false,
-        notesCount: 9,
-      },
-    ],
-    'user-marcus-chen': [
-      {
-        id: 'lib-mc-1',
-        type: 'course',
-        title: 'API Resilience, Idempotency & Payment Gateways',
-        providerOrChannel: 'Stripe Engineering Academy',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400&auto=format&fit=crop&q=80',
-        progressPercentage: 92,
-        currentLessonOrChapter: 'Chapter 6: Webhook Retry Idempotency & Replay Attacks',
-        totalDurationOrModules: '5h 30m',
-        skillsCovered: ['API Design', 'Fintech', 'Idempotency', 'Security'],
-        lastStudiedAt: '3 hours ago',
-        isCompleted: false,
-        notesCount: 12,
-      },
-    ],
-    'user-elena-rostova': [
-      {
-        id: 'lib-er-1',
-        type: 'youtube_track',
-        title: 'Deep Dive: Scaling Gemini Multimodal Models & Function Calling',
-        providerOrChannel: 'Google DeepMind Tech Talks',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80',
-        progressPercentage: 100,
-        currentLessonOrChapter: 'Completed (All 6 Chapters)',
-        totalDurationOrModules: '1h 30m',
-        skillsCovered: ['Gemini 2.5', 'Agentic Workflows', 'Multimodal Prompting'],
-        lastStudiedAt: '4 days ago',
-        isCompleted: true,
-        notesCount: 22,
-        certificateSerial: 'IS-CERT-2026-WEB-99120',
-      },
-      {
-        id: 'lib-er-2',
-        type: 'course',
-        title: 'Test-Time Compute & Reinforcement Learning from Human Feedback',
-        providerOrChannel: 'Stanford Online AI Series',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1507146426996-ef05306b995a?w=400&auto=format&fit=crop&q=80',
-        progressPercentage: 65,
-        currentLessonOrChapter: 'Section 3: Tree Search & Value Model Distillation',
-        totalDurationOrModules: '12h 00m',
-        skillsCovered: ['PyTorch', 'RLHF', 'Transformers', 'Evaluation'],
-        lastStudiedAt: 'Yesterday',
-        isCompleted: false,
-        notesCount: 18,
-      },
-    ],
-    'user-rahul-patel': [
-      {
-        id: 'lib-rp-1',
-        type: 'youtube_track',
-        title: 'React 19 Server Components, Actions & Optimistic UI',
-        providerOrChannel: 'Frontend Masters & Jack Herrington',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&auto=format&fit=crop&q=80',
-        progressPercentage: 84,
-        currentLessonOrChapter: 'Lesson 7: useActionState and useOptimistic in Production',
-        totalDurationOrModules: '4h 15m',
-        skillsCovered: ['React 19', 'TypeScript', 'Server Actions', 'Optimistic UI'],
-        lastStudiedAt: '1 hour ago',
-        isCompleted: false,
-        notesCount: 15,
-      },
-      {
-        id: 'lib-rp-2',
-        type: 'course',
-        title: 'PostgreSQL Advanced Indexing & Query Tuning',
-        providerOrChannel: 'IndustrySkill Data Engineering',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=400&auto=format&fit=crop&q=80',
-        progressPercentage: 45,
-        currentLessonOrChapter: 'Module 3: Partial & GIN Indexes for JSONB',
-        totalDurationOrModules: '6h 00m',
-        skillsCovered: ['PostgreSQL', 'SQL Optimization', 'GIN Indexes', 'Drizzle ORM'],
-        lastStudiedAt: '3 days ago',
-        isCompleted: false,
-        notesCount: 7,
-      },
-    ],
+    id: row.id || (row.email ? `usr-${row.email.replace(/[^a-zA-Z0-9]/g, '_')}` : 'unknown-user'),
+    userId: handleWithAt,
+    username: cleanUsername,
+    name: row.name || (row.email ? row.email.split('@')[0] : 'Verified Member'),
+    headline:
+      row.headline ||
+      `${row.target_role || row.targetRole || 'Full Stack Engineer'} • ${row.college || 'Tech Institute'}`,
+    avatarUrl:
+      row.avatar_url ||
+      row.avatarUrl ||
+      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+    coverUrl:
+      row.cover_url ||
+      'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1000&auto=format&fit=crop&q=80',
+    company: row.college || row.company || 'IndustrySkill Academy',
+    role: row.target_role || row.targetRole || 'Developer',
+    location: row.location || 'Remote',
+    bio: row.bio || 'Passionate developer building verified projects and connecting with peers in real-time.',
+    followersCount: Number(row.followers_count ?? row.followersCount ?? 0),
+    followingCount: Number(row.following_count ?? row.followingCount ?? 0),
+    isFollowing: false,
+    isFollower: false,
+    isFriend: false,
+    isPrivate: Boolean(row.is_private_account ?? row.isPrivate),
+    isLibraryPrivate: Boolean(row.is_private_account ?? row.isPrivate),
+    hasAccessToLibrary: !Boolean(row.is_private_account ?? row.isPrivate),
+    skills: skillsArray,
+    interests: interestsArray.length ? interestsArray : ['Web Development', 'Cloud Architecture'],
+    certificates: [],
+    libraryItems: [],
+    projects: [],
+    internships: [],
+    achievements: [],
+    onlineStatus: 'online',
   };
 }
 
 // Convert current user profile into a real NetworkUser
 export function mapProfileToNetworkUser(user: UserProfile, libraryItems?: UserLibraryItem[]): NetworkUser {
-  const generatedHandle = user.userId || user.username || (user.email ? `@${user.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_')}` : '@developer');
+  const generatedHandle =
+    user.userId ||
+    user.username ||
+    (user.email ? `@${user.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_')}` : '@developer');
   const cleanUsername = generatedHandle.startsWith('@') ? generatedHandle.substring(1) : generatedHandle;
 
   return {
-    id: user.email ? `usr-${user.email.replace(/[^a-zA-Z0-9]/g, '_')}` : 'current-user-real',
+    id: user.id || (user.email ? `usr-${user.email.replace(/[^a-zA-Z0-9]/g, '_')}` : 'current-user-real'),
     userId: generatedHandle.startsWith('@') ? generatedHandle : `@${generatedHandle}`,
     username: cleanUsername,
     name: user.name || (user.email ? user.email.split('@')[0] : 'Student Developer'),
-    headline: user.headline || `${user.targetRole || 'Full Stack Engineer'} • ${user.college || 'Tech Institute'} '${user.gradYear || '2026'}`,
-    avatarUrl: user.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+    headline:
+      user.headline ||
+      `${user.targetRole || 'Full Stack Engineer'} • ${user.college || 'Tech Institute'} '${user.gradYear || '2026'}`,
+    avatarUrl:
+      user.avatarUrl ||
+      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
     coverUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1000&auto=format&fit=crop&q=80',
     company: user.college || 'IndustrySkill Academy',
     role: user.targetRole || 'Full Stack Engineer',
-    location: user.location || 'San Francisco, CA / Remote',
-    bio: user.bio || `Passionate student developer targeting ${user.targetRole || 'Full Stack Engineering'}. Actively building verified projects, solving distributed systems challenges, and collaborating with peers.`,
-    followersCount: user.followersCount ?? 4,
-    followingCount: user.followingCount ?? 2,
+    location: user.location || 'Remote',
+    bio:
+      user.bio ||
+      `Passionate student developer targeting ${user.targetRole || 'Full Stack Engineering'}. Actively building verified projects.`,
+    followersCount: user.followersCount ?? 0,
+    followingCount: user.followingCount ?? 0,
     isFollowing: false,
     isFollower: false,
     isFriend: false,
     isPrivate: Boolean(user.isPrivateAccount),
     isLibraryPrivate: Boolean(user.isPrivateAccount),
-    skills: user.skills && user.skills.length > 0 ? user.skills : ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Tailwind CSS', 'Git', 'System Design'],
-    interests: user.interests && user.interests.length > 0 ? user.interests : ['AI & Machine Learning', 'Cloud Architecture', 'Distributed Systems', 'Full-Stack Web'],
+    skills:
+      user.skills && user.skills.length > 0
+        ? user.skills
+        : ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Tailwind CSS'],
+    interests:
+      user.interests && user.interests.length > 0
+        ? user.interests
+        : ['Full-Stack Web', 'AI & Machine Learning', 'Cloud Architecture'],
     certificates: user.earnedCertificates || [],
     libraryItems: libraryItems || [],
     projects: user.projects || [],
     internships: user.internships || [],
     achievements: user.achievements || [],
     onlineStatus: 'online',
-    currentlyStudyingStory: {
-      topic: 'Full-Stack Distributed Systems',
-      courseTitle: 'React 19 & Cloudflare Architecture',
-      progress: user.learningProgress || 72,
-      updatedAt: 'Just now',
-    },
   };
 }
 
-// Service methods
+// ============================================================================
+// REAL-TIME CONNECTIVITY SERVICE
+// ============================================================================
 export const connectivityService = {
-  // Check if profile setup is completed for the current authenticated user
+  // Check if profile setup is completed
   isSetupCompleted(user: UserProfile): boolean {
     if (user.connectivitySetupCompleted) return true;
     try {
@@ -204,8 +173,51 @@ export const connectivityService = {
     }
   },
 
+  // Auto-sync current user profile to Supabase database so other users can search & chat with them
+  async syncUserProfileToSupabase(user: UserProfile): Promise<void> {
+    if (!existingSupabaseClient || !user.email) return;
+    try {
+      const handle =
+        user.userId ||
+        user.username ||
+        (user.email ? `@${user.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_')}` : '@developer');
+      const cleanUsername = handle.replace(/^@/, '');
+
+      const profilePayload: any = {
+        email: user.email.toLowerCase().trim(),
+        name: user.name || user.email.split('@')[0],
+        avatar_url:
+          user.avatarUrl ||
+          'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+        headline:
+          user.headline ||
+          `${user.targetRole || 'Full Stack Engineer'} • ${user.college || 'Tech Institute'}`,
+        bio: user.bio || 'Building verified projects on IndustrySkill.',
+        college: user.college || 'Tech Institute',
+        degree: user.degree || 'B.Tech Computer Science',
+        grad_year: user.gradYear || '2026',
+        target_role: user.targetRole || 'Full Stack Engineer',
+        location: user.location || 'Remote',
+        is_private_account: Boolean(user.isPrivateAccount),
+        updated_at: new Date().toISOString(),
+      };
+
+      // If user has Supabase Auth user ID
+      const { data: authSession } = await existingSupabaseClient.auth.getSession();
+      if (authSession?.session?.user?.id) {
+        profilePayload.id = authSession.session.user.id;
+      }
+
+      await existingSupabaseClient.from('profiles').upsert(profilePayload, {
+        onConflict: 'email',
+      });
+    } catch (err) {
+      console.warn('Supabase profile sync notice:', err);
+    }
+  },
+
   // Mark profile setup completed with new data
-  completeSetup(
+  async completeSetup(
     user: UserProfile,
     data: {
       userId: string;
@@ -216,88 +228,162 @@ export const connectivityService = {
       headline?: string;
       bio?: string;
     }
-  ): void {
+  ): Promise<void> {
     try {
       const key = getStorageKey(BASE_STORAGE_KEYS.SETUP_DONE, user);
       localStorage.setItem(key, 'true');
 
-      // Update user in users list if exists or ensure currentUserMapped has this data
-      const users = this.getUsers(user);
-      const currentMapped = mapProfileToNetworkUser({
-        ...user,
-        userId: data.userId,
-        name: data.name,
-        avatarUrl: data.avatarUrl,
-        skills: data.skills,
-        interests: data.interests,
-        headline: data.headline,
-        bio: data.bio,
-      });
-
-      const updatedUsers = users.map((u) => {
-        if (u.id === currentMapped.id || u.id === 'current-user-real') {
-          return {
-            ...u,
-            userId: data.userId,
+      // Sync to Supabase
+      if (existingSupabaseClient && user.email) {
+        const cleanUsername = data.userId.replace(/^@/, '');
+        await existingSupabaseClient.from('profiles').upsert(
+          {
+            email: user.email.toLowerCase().trim(),
             name: data.name,
-            avatarUrl: data.avatarUrl,
-            skills: data.skills,
-            interests: data.interests,
-            headline: data.headline || u.headline,
-            bio: data.bio || u.bio,
-          };
-        }
-        return u;
-      });
-
-      this.saveUsers(updatedUsers, user);
+            avatar_url: data.avatarUrl,
+            headline: data.headline || user.headline,
+            bio: data.bio || user.bio,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'email' }
+        );
+      }
     } catch (e) {
       console.error('Error completing connectivity setup:', e);
     }
   },
 
-  // Load Users with Privacy, Library, and Follow state (isolated per user)
+  // Search across ALL Supabase registered users in real time
+  async searchUsers(query: string, currentUser: UserProfile): Promise<NetworkUser[]> {
+    const currentMapped = mapProfileToNetworkUser(currentUser);
+    const cleanQuery = query.trim().replace(/^@/, '');
+
+    if (!cleanQuery) {
+      return this.getUsers(currentUser);
+    }
+
+    if (existingSupabaseClient) {
+      try {
+        const { data, error } = await existingSupabaseClient
+          .from('profiles')
+          .select('*')
+          .or(
+            `name.ilike.%${cleanQuery}%,email.ilike.%${cleanQuery}%,headline.ilike.%${cleanQuery}%,target_role.ilike.%${cleanQuery}%,college.ilike.%${cleanQuery}%`
+          )
+          .limit(30);
+
+        if (!error && Array.isArray(data)) {
+          const currentEmail = currentUser.email?.toLowerCase().trim();
+          const mappedUsers = data
+            .filter((row: any) => row.email?.toLowerCase().trim() !== currentEmail)
+            .map((row: any) => mapRowToNetworkUser(row, currentMapped.id));
+
+          // Enhance with follow state from local cache
+          const localUsers = this.getLocalUsers(currentUser);
+          const followMap = new Map<string, boolean>(localUsers.map((u) => [u.id, Boolean(u.isFollowing)]));
+
+          return mappedUsers.map((u) => ({
+            ...u,
+            isFollowing: Boolean(followMap.get(u.id)),
+          }));
+        }
+      } catch (err) {
+        console.warn('Supabase search users notice:', err);
+      }
+    }
+
+    // Fallback to searching local cache
+    const allUsers = this.getLocalUsers(currentUser);
+    const q = cleanQuery.toLowerCase();
+    return allUsers.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) ||
+        u.username?.toLowerCase().includes(q) ||
+        u.userId?.toLowerCase().includes(q) ||
+        u.headline.toLowerCase().includes(q) ||
+        u.skills.some((s) => s.toLowerCase().includes(q))
+    );
+  },
+
+  // Fetch real users from Supabase profiles
+  async fetchUsers(currentUser: UserProfile): Promise<NetworkUser[]> {
+    const currentMapped = mapProfileToNetworkUser(currentUser);
+    const currentEmail = currentUser.email?.toLowerCase().trim();
+
+    if (existingSupabaseClient) {
+      try {
+        // Sync self first
+        await this.syncUserProfileToSupabase(currentUser);
+
+        const { data, error } = await existingSupabaseClient
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (!error && Array.isArray(data)) {
+          const peers = data.filter((row: any) => row.email?.toLowerCase().trim() !== currentEmail);
+          const mapped = peers.map((row: any) => mapRowToNetworkUser(row, currentMapped.id));
+
+          // Merge with local follow / privacy state
+          const localUsers = this.getLocalUsers(currentUser);
+          const localMap = new Map<string, NetworkUser>(localUsers.map((u) => [u.id, u]));
+
+          const finalUsers: NetworkUser[] = mapped.map((u) => {
+            const local = localMap.get(u.id);
+            if (local) {
+              return {
+                ...u,
+                isFollowing: Boolean(local.isFollowing),
+                isFriend: Boolean(local.isFriend),
+                followersCount: Number(local.followersCount || 0),
+              };
+            }
+            return u;
+          });
+
+          this.saveLocalUsers(finalUsers, currentUser);
+          return finalUsers;
+        }
+      } catch (err) {
+        console.warn('Supabase fetchUsers notice:', err);
+      }
+    }
+
+    return this.getLocalUsers(currentUser);
+  },
+
+  // Synchronous getter for immediate render from cache
   getUsers(currentUser: UserProfile): NetworkUser[] {
+    return this.getLocalUsers(currentUser);
+  },
+
+  getLocalUsers(currentUser: UserProfile): NetworkUser[] {
     try {
       const storageKey = getStorageKey(BASE_STORAGE_KEYS.USERS, currentUser);
       const stored = localStorage.getItem(storageKey);
-      let users: NetworkUser[] = stored ? JSON.parse(stored) : initialNetworkUsers;
-
-      const libraries = this.getUserLibraries(currentUser);
-      const currentReqs = this.getAccessRequests(currentUser);
-
-      // Ensure libraryItems & follower/friend states are calculated
-      users = users.map((u) => {
-        const userLib = libraries[u.id] || [];
-        const isApproved = currentReqs.some(
-          (r) => r.targetUserId === u.id && r.status === 'approved'
+      if (stored) {
+        const parsed: NetworkUser[] = JSON.parse(stored);
+        // Filter out any legacy dummy mock accounts (Priya, Marcus, Elena, Rahul)
+        const clean = parsed.filter(
+          (u) =>
+            !u.id.startsWith('user-priya-') &&
+            !u.id.startsWith('user-marcus-') &&
+            !u.id.startsWith('user-elena-') &&
+            !u.id.startsWith('user-rahul-') &&
+            !u.id.startsWith('user-sophia-') &&
+            !u.id.startsWith('user-arjun-') &&
+            !u.id.startsWith('user-sarah-')
         );
-        const isRequested = currentReqs.some(
-          (r) => r.targetUserId === u.id && r.status === 'pending'
-        );
-
-        // A user is a Friend if they are mutually followed
-        const isFriend = Boolean(u.isFollowing && u.isFollower);
-
-        return {
-          ...u,
-          libraryItems: userLib,
-          isFriend,
-          isLibraryPrivate: u.isPrivate !== undefined ? u.isPrivate : false,
-          hasAccessToLibrary: !u.isPrivate || isApproved,
-          isAccessRequested: isRequested,
-        };
-      });
-
-      return users;
+        return clean;
+      }
     } catch (e) {
-      console.error('Error fetching connectivity users:', e);
-      return initialNetworkUsers;
+      console.error('Error fetching connectivity users from cache:', e);
     }
+    return [];
   },
 
-  // Save Users (isolated per user)
-  saveUsers(users: NetworkUser[], currentUser?: UserProfile): void {
+  saveLocalUsers(users: NetworkUser[], currentUser?: UserProfile): void {
     try {
       const storageKey = getStorageKey(BASE_STORAGE_KEYS.USERS, currentUser);
       localStorage.setItem(storageKey, JSON.stringify(users));
@@ -306,51 +392,81 @@ export const connectivityService = {
     }
   },
 
-  // Get all libraries
-  getUserLibraries(currentUser?: UserProfile): Record<string, UserLibraryItem[]> {
-    try {
-      const storageKey = getStorageKey(BASE_STORAGE_KEYS.USER_LIBRARIES, currentUser);
-      const stored = localStorage.getItem(storageKey);
-      if (stored) return JSON.parse(stored);
-    } catch (e) {
-      console.error('Error fetching user libraries:', e);
+  // Fetch real posts from Supabase or cache
+  async fetchPosts(currentUser: UserProfile): Promise<NetworkPost[]> {
+    if (existingSupabaseClient) {
+      try {
+        const { data, error } = await existingSupabaseClient
+          .from('posts')
+          .select('*, author:profiles(*)')
+          .order('created_at', { ascending: false })
+          .limit(30);
+
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const currentMapped = mapProfileToNetworkUser(currentUser);
+          const mappedPosts: NetworkPost[] = data.map((p: any) => ({
+            id: p.id,
+            author: {
+              id: p.author_id,
+              name: p.author?.name || 'Verified Developer',
+              avatarUrl:
+                p.author?.avatar_url ||
+                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+              headline: p.author?.headline || 'Engineer',
+              company: p.author?.college || 'IndustrySkill',
+              isCurrentUser: p.author_id === currentMapped.id || p.author?.email === currentUser.email,
+            },
+            timestamp: new Date(p.created_at).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+            content: p.content,
+            tags: p.tags || ['#SoftwareEngineering'],
+            skills: p.skills || ['WebDev'],
+            likesCount: Number(p.likes_count || 0),
+            isLiked: false,
+            commentsCount: Number(p.comments_count || 0),
+            repostsCount: Number(p.reposts_count || 0),
+            imageUrl: p.image_url,
+            codeSnippet: p.code_snippet,
+            poll: p.poll,
+            comments: [],
+          }));
+
+          this.saveLocalPosts(mappedPosts, currentUser);
+          return mappedPosts;
+        }
+      } catch (err) {
+        console.warn('Supabase fetchPosts notice:', err);
+      }
     }
-    const initial = getInitialUserLibraries();
-    try {
-      const storageKey = getStorageKey(BASE_STORAGE_KEYS.USER_LIBRARIES, currentUser);
-      localStorage.setItem(storageKey, JSON.stringify(initial));
-    } catch {}
-    return initial;
+
+    return this.getPosts(currentUser);
   },
 
-  // Save library for specific user
-  saveUserLibrary(userId: string, items: UserLibraryItem[], currentUser?: UserProfile): void {
-    try {
-      const all = this.getUserLibraries(currentUser);
-      all[userId] = items;
-      const storageKey = getStorageKey(BASE_STORAGE_KEYS.USER_LIBRARIES, currentUser);
-      localStorage.setItem(storageKey, JSON.stringify(all));
-    } catch (e) {
-      console.error('Error saving user library:', e);
-    }
-  },
-
-  // Load Posts (isolated per user)
   getPosts(currentUser: UserProfile): NetworkPost[] {
     try {
       const storageKey = getStorageKey(BASE_STORAGE_KEYS.POSTS, currentUser);
       const stored = localStorage.getItem(storageKey);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed: NetworkPost[] = JSON.parse(stored);
+        return parsed.filter(
+          (p) =>
+            !p.id.startsWith('post-priya-') &&
+            !p.id.startsWith('post-elena-') &&
+            !p.id.startsWith('post-marcus-') &&
+            !p.id.startsWith('post-rahul-')
+        );
       }
     } catch (e) {
       console.error('Error fetching posts:', e);
     }
-    return initialNetworkPosts;
+    return [];
   },
 
-  // Save Posts (isolated per user)
-  savePosts(posts: NetworkPost[], currentUser?: UserProfile): void {
+  saveLocalPosts(posts: NetworkPost[], currentUser?: UserProfile): void {
     try {
       const storageKey = getStorageKey(BASE_STORAGE_KEYS.POSTS, currentUser);
       localStorage.setItem(storageKey, JSON.stringify(posts));
@@ -359,8 +475,8 @@ export const connectivityService = {
     }
   },
 
-  // Create a new Post
-  createPost(
+  // Create real post
+  async createPost(
     currentUser: UserProfile,
     payload: {
       content: string;
@@ -369,7 +485,7 @@ export const connectivityService = {
       attachedCertificate?: GeneratedCertificate;
       tags?: string[];
     }
-  ): NetworkPost {
+  ): Promise<NetworkPost> {
     const currentMapped = mapProfileToNetworkUser(currentUser);
     const newPost: NetworkPost = {
       id: `post-${Date.now()}`,
@@ -383,26 +499,52 @@ export const connectivityService = {
       },
       timestamp: 'Just now',
       content: payload.content,
-      tags: payload.tags || ['#LearningInPublic', '#TechSkills', '#BuildInPublic'],
+      tags: payload.tags || ['#IndustrySkill', '#WebDevelopment'],
       skills: payload.attachedCertificate ? payload.attachedCertificate.skillsValidated : ['Software Engineering'],
       likesCount: 0,
       isLiked: false,
       commentsCount: 0,
       repostsCount: 0,
-      isReposted: false,
       imageUrl: payload.imageUrl,
       codeSnippet: payload.codeSnippet,
       attachedCertificate: payload.attachedCertificate,
       comments: [],
     };
 
+    if (existingSupabaseClient) {
+      try {
+        const { data: authSession } = await existingSupabaseClient.auth.getSession();
+        const authorUuid = authSession?.session?.user?.id;
+        if (authorUuid) {
+          const { data, error } = await existingSupabaseClient
+            .from('posts')
+            .insert({
+              author_id: authorUuid,
+              content: payload.content,
+              image_url: payload.imageUrl,
+              code_snippet: payload.codeSnippet,
+              tags: payload.tags || ['#IndustrySkill'],
+              skills: newPost.skills,
+            })
+            .select()
+            .single();
+
+          if (!error && data) {
+            newPost.id = data.id;
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase createPost insert notice:', err);
+      }
+    }
+
     const existingPosts = this.getPosts(currentUser);
     const updated = [newPost, ...existingPosts];
-    this.savePosts(updated, currentUser);
+    this.saveLocalPosts(updated, currentUser);
     return newPost;
   },
 
-  // Toggle Like on Post
+  // Like & Comment handlers
   toggleLike(postId: string, currentUser: UserProfile): NetworkPost[] {
     const posts = this.getPosts(currentUser);
     const updated = posts.map((p) => {
@@ -416,11 +558,10 @@ export const connectivityService = {
       }
       return p;
     });
-    this.savePosts(updated, currentUser);
+    this.saveLocalPosts(updated, currentUser);
     return updated;
   },
 
-  // Add comment
   addComment(postId: string, content: string, currentUser: UserProfile): NetworkPost[] {
     const currentMapped = mapProfileToNetworkUser(currentUser);
     const posts = this.getPosts(currentUser);
@@ -445,22 +586,26 @@ export const connectivityService = {
       }
       return p;
     });
-    this.savePosts(updated, currentUser);
+    this.saveLocalPosts(updated, currentUser);
     return updated;
   },
 
-  // Conversations & Direct Messaging (isolated per user)
+  // ============================================================================
+  // REAL-TIME 1-ON-1 CHAT & MESSAGING
+  // ============================================================================
   getConversations(currentUser: UserProfile): NetworkConversation[] {
     try {
       const storageKey = getStorageKey(BASE_STORAGE_KEYS.MESSAGES, currentUser);
       const stored = localStorage.getItem(storageKey);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed: NetworkConversation[] = JSON.parse(stored);
+        // Clean out legacy demo conversations
+        return parsed.filter((c) => !c.id.startsWith('conv-priya') && !c.id.startsWith('conv-marcus'));
       }
     } catch (e) {
       console.error('Error fetching conversations:', e);
     }
-    return initialConversations;
+    return [];
   },
 
   saveConversations(convs: NetworkConversation[], currentUser?: UserProfile): void {
@@ -472,30 +617,66 @@ export const connectivityService = {
     }
   },
 
-  sendMessage(
-    participantId: string,
+  // Send real-time chat message with broadcast & Supabase sync
+  async sendMessage(
+    participant: NetworkUser,
     content: string,
     currentUser: UserProfile
-  ): NetworkConversation[] {
+  ): Promise<{ updatedConversations: NetworkConversation[]; newMsg: NetworkMessage }> {
     const currentMapped = mapProfileToNetworkUser(currentUser);
     const convs = this.getConversations(currentUser);
-    const users = this.getUsers(currentUser);
-    const targetUser = users.find((u) => u.id === participantId) || initialNetworkUsers[0];
+    const nowIso = new Date().toISOString();
+    const formattedTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    const newMsg: NetworkMessage = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      senderId: currentMapped.id,
+      receiverId: participant.id,
+      content,
+      timestamp: formattedTime,
+      isRead: true,
+    };
+
+    // 1. Send via Supabase Realtime broadcast and database table insert if configured
+    if (existingSupabaseClient) {
+      try {
+        const globalChannel = existingSupabaseClient.channel('public:global_realtime_chat');
+        await globalChannel.send({
+          type: 'broadcast',
+          event: 'chat_message',
+          payload: {
+            ...newMsg,
+            senderName: currentMapped.name,
+            senderAvatar: currentMapped.avatarUrl,
+            createdAt: nowIso,
+          },
+        });
+
+        // Also attempt insert into database messages table if UUIDs match
+        const { data: authSession } = await existingSupabaseClient.auth.getSession();
+        const senderUuid = authSession?.session?.user?.id;
+        if (senderUuid && participant.id.length === 36) {
+          await existingSupabaseClient.from('messages').insert({
+            sender_id: senderUuid,
+            receiver_id: participant.id,
+            content,
+            is_read: false,
+            created_at: nowIso,
+          });
+        }
+      } catch (err) {
+        console.warn('Supabase Realtime message dispatch note:', err);
+      }
+    }
+
+    // 2. Update local conversation store
     let found = false;
     const updated = convs.map((conv) => {
-      if (conv.participant.id === participantId) {
+      if (conv.participant.id === participant.id) {
         found = true;
-        const newMsg: NetworkMessage = {
-          id: `msg-${Date.now()}`,
-          senderId: currentMapped.id,
-          receiverId: participantId,
-          content,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isRead: true,
-        };
         return {
           ...conv,
+          participant,
           lastMessage: content,
           lastMessageTime: 'Just now',
           messages: [...conv.messages, newMsg],
@@ -505,17 +686,9 @@ export const connectivityService = {
     });
 
     if (!found) {
-      const newMsg: NetworkMessage = {
-        id: `msg-${Date.now()}`,
-        senderId: currentMapped.id,
-        receiverId: participantId,
-        content,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isRead: true,
-      };
       updated.unshift({
-        id: `conv-${participantId}`,
-        participant: targetUser,
+        id: `conv-${participant.id}`,
+        participant,
         lastMessage: content,
         lastMessageTime: 'Just now',
         unreadCount: 0,
@@ -524,32 +697,175 @@ export const connectivityService = {
     }
 
     this.saveConversations(updated, currentUser);
+    return { updatedConversations: updated, newMsg };
+  },
+
+  // Subscribe to real-time incoming messages for current user across Broadcast and DB Postgres Changes
+  subscribeToRealtimeChat(
+    currentUser: UserProfile,
+    onIncomingMessage: (msg: NetworkMessage, participant: NetworkUser) => void
+  ): () => void {
+    if (!existingSupabaseClient) return () => {};
+
+    const currentMapped = mapProfileToNetworkUser(currentUser);
+    const seenMessageIds = new Set<string>();
+
+    const dispatchIncoming = (msg: NetworkMessage, incomingSender: NetworkUser) => {
+      if (seenMessageIds.has(msg.id)) return;
+      seenMessageIds.add(msg.id);
+      onIncomingMessage(msg, incomingSender);
+    };
+
+    const realtimeChannel = existingSupabaseClient
+      .channel(`realtime_chat_listener_${currentMapped.id.replace(/[^a-zA-Z0-9_]/g, '_')}`)
+      // 1. Listen for Realtime Broadcast events
+      .on('broadcast', { event: 'chat_message' }, ({ payload }) => {
+        if (payload && (payload.receiverId === currentMapped.id || payload.receiverId === currentUser.id || payload.receiverId === currentUser.email)) {
+          const incomingSender: NetworkUser = {
+            id: payload.senderId,
+            name: payload.senderName || 'Member',
+            avatarUrl:
+              payload.senderAvatar ||
+              'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+            headline: 'Verified Peer',
+            company: 'IndustrySkill',
+            role: 'Developer',
+            location: 'Remote',
+            bio: '',
+            followersCount: 0,
+            followingCount: 0,
+            isFollowing: false,
+            isPrivate: false,
+            skills: ['Developer'],
+            certificates: [],
+            libraryItems: [],
+            projects: [],
+            internships: [],
+            achievements: [],
+            onlineStatus: 'online',
+          };
+
+          const newMsg: NetworkMessage = {
+            id: payload.id || `msg-${Date.now()}`,
+            senderId: payload.senderId,
+            receiverId: payload.receiverId,
+            content: payload.content,
+            timestamp: payload.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isRead: false,
+          };
+
+          dispatchIncoming(newMsg, incomingSender);
+        }
+      })
+      // 2. Listen for Postgres database table inserts on the shared messages table
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        },
+        async (payload) => {
+          const newRow = payload.new as any;
+          if (newRow && (newRow.receiver_id === currentMapped.id || newRow.receiver_id === currentUser.id)) {
+            // Fetch sender profile details if available
+            let senderName = 'Member';
+            let senderAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80';
+            let senderHeadline = 'Verified Peer';
+
+            try {
+              const { data: senderData } = await existingSupabaseClient
+                .from('profiles')
+                .select('name, avatar_url, headline, college, target_role')
+                .eq('id', newRow.sender_id)
+                .maybeSingle();
+
+              if (senderData) {
+                senderName = senderData.name || senderName;
+                senderAvatar = senderData.avatar_url || senderAvatar;
+                senderHeadline = senderData.headline || `${senderData.target_role || 'Developer'} • ${senderData.college || 'IndustrySkill'}`;
+              }
+            } catch (err) {
+              console.warn('Could not fetch message sender profile:', err);
+            }
+
+            const incomingSender: NetworkUser = {
+              id: newRow.sender_id,
+              name: senderName,
+              avatarUrl: senderAvatar,
+              headline: senderHeadline,
+              company: 'IndustrySkill',
+              role: 'Developer',
+              location: 'Remote',
+              bio: '',
+              followersCount: 0,
+              followingCount: 0,
+              isFollowing: false,
+              isPrivate: false,
+              skills: ['Developer'],
+              certificates: [],
+              libraryItems: [],
+              projects: [],
+              internships: [],
+              achievements: [],
+              onlineStatus: 'online',
+            };
+
+            const newMsg: NetworkMessage = {
+              id: newRow.id || `msg-db-${Date.now()}`,
+              senderId: newRow.sender_id,
+              receiverId: newRow.receiver_id,
+              content: newRow.content,
+              timestamp: newRow.created_at
+                ? new Date(newRow.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              isRead: Boolean(newRow.is_read),
+            };
+
+            dispatchIncoming(newMsg, incomingSender);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      existingSupabaseClient.removeChannel(realtimeChannel);
+    };
+  },
+
+  // Toggle user follow / connect
+  toggleFollow(targetUserId: string, currentUser: UserProfile): NetworkUser[] {
+    const users = this.getLocalUsers(currentUser);
+    const updated = users.map((u) => {
+      if (u.id === targetUserId) {
+        const nextState = !u.isFollowing;
+        const isFriend = Boolean(nextState && u.isFollower);
+        return {
+          ...u,
+          isFollowing: nextState,
+          isFriend,
+          followersCount: nextState ? u.followersCount + 1 : Math.max(0, u.followersCount - 1),
+        };
+      }
+      return u;
+    });
+    this.saveLocalUsers(updated, currentUser);
     return updated;
   },
 
-  // Follow Requests and Library Privacy Access Requests
+  // Follow Requests and Library Privacy Access Requests (Clean with no dummy requests)
   getAccessRequests(currentUser?: UserProfile): LibraryAccessRequest[] {
     try {
       const storageKey = getStorageKey(BASE_STORAGE_KEYS.LIBRARY_REQUESTS, currentUser);
       const stored = localStorage.getItem(storageKey);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed: LibraryAccessRequest[] = JSON.parse(stored);
+        return parsed.filter((r) => !r.id.startsWith('req-init-'));
       }
     } catch (e) {
       console.error('Error reading access requests:', e);
     }
-    return [
-      {
-        id: 'req-init-1',
-        requesterId: 'user-marcus-chen',
-        requesterName: 'Marcus Chen',
-        requesterAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-        requesterHeadline: 'Lead University Recruiter @ Stripe',
-        targetUserId: 'current-user-real',
-        requestedAt: '20 mins ago',
-        status: 'pending',
-      },
-    ];
+    return [];
   },
 
   saveAccessRequests(requests: LibraryAccessRequest[], currentUser?: UserProfile): void {
@@ -561,7 +877,6 @@ export const connectivityService = {
     }
   },
 
-  // Request Access to a private user's library
   requestLibraryAccess(
     targetUserId: string,
     currentUser: UserProfile
@@ -569,7 +884,6 @@ export const connectivityService = {
     const currentMapped = mapProfileToNetworkUser(currentUser);
     const existing = this.getAccessRequests(currentUser);
 
-    // Check if already requested
     const alreadyReq = existing.find(
       (r) => r.requesterId === currentMapped.id && r.targetUserId === targetUserId
     );
@@ -593,7 +907,6 @@ export const connectivityService = {
     return { success: true, request: newReq };
   },
 
-  // Approve or Decline Access Request
   respondToAccessRequest(
     requestId: string,
     decision: 'approved' | 'declined',
@@ -610,29 +923,30 @@ export const connectivityService = {
     return updated;
   },
 
-  // Toggle user follow / connect
-  toggleFollow(targetUserId: string, currentUser: UserProfile): NetworkUser[] {
-    const users = this.getUsers(currentUser);
-    const updated = users.map((u) => {
-      if (u.id === targetUserId) {
-        const nextState = !u.isFollowing;
-        const isFriend = Boolean(nextState && u.isFollower);
-        return {
-          ...u,
-          isFollowing: nextState,
-          isFriend,
-          followersCount: nextState ? u.followersCount + 1 : Math.max(0, u.followersCount - 1),
-        };
-      }
-      return u;
-    });
-    this.saveUsers(updated, currentUser);
-    return updated;
+  getUserLibraries(currentUser?: UserProfile): Record<string, UserLibraryItem[]> {
+    try {
+      const storageKey = getStorageKey(BASE_STORAGE_KEYS.USER_LIBRARIES, currentUser);
+      const stored = localStorage.getItem(storageKey);
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error('Error fetching user libraries:', e);
+    }
+    return {};
   },
 
-  // Toggle profile privacy
+  saveUserLibrary(userId: string, items: UserLibraryItem[], currentUser?: UserProfile): void {
+    try {
+      const all = this.getUserLibraries(currentUser);
+      all[userId] = items;
+      const storageKey = getStorageKey(BASE_STORAGE_KEYS.USER_LIBRARIES, currentUser);
+      localStorage.setItem(storageKey, JSON.stringify(all));
+    } catch (e) {
+      console.error('Error saving user library:', e);
+    }
+  },
+
   toggleProfilePrivacy(isPrivate: boolean, currentUser: UserProfile): void {
-    const users = this.getUsers(currentUser);
+    const users = this.getLocalUsers(currentUser);
     const currentMapped = mapProfileToNetworkUser(currentUser);
     const updated = users.map((u) => {
       if (u.id === currentMapped.id || u.id === 'current-user-real') {
@@ -640,6 +954,6 @@ export const connectivityService = {
       }
       return u;
     });
-    this.saveUsers(updated, currentUser);
+    this.saveLocalUsers(updated, currentUser);
   },
 };

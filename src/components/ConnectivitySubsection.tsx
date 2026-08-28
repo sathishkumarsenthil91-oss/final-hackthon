@@ -113,18 +113,35 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
   };
 
   // Load real data on mount & whenever user updates
-  const reloadData = () => {
+  const reloadData = async () => {
+    // 1. Instant cache load
     const fetchedUsers = connectivityService.getUsers(user);
     const fetchedPosts = connectivityService.getPosts(user);
     const fetchedConvs = connectivityService.getConversations(user);
-    const fetchedReqs = connectivityService.getAccessRequests();
-    const fetchedLibs = connectivityService.getUserLibraries();
+    const fetchedReqs = connectivityService.getAccessRequests(user);
+    const fetchedLibs = connectivityService.getUserLibraries(user);
 
     setUsers(fetchedUsers);
     setPosts(fetchedPosts);
     setConversations(fetchedConvs);
     setAccessRequests(fetchedReqs);
     setUserLibraries(fetchedLibs);
+
+    // 2. Fetch live data asynchronously from Supabase
+    try {
+      const [liveUsers, livePosts] = await Promise.all([
+        connectivityService.fetchUsers(user),
+        connectivityService.fetchPosts(user),
+      ]);
+      if (Array.isArray(liveUsers)) {
+        setUsers(liveUsers);
+      }
+      if (Array.isArray(livePosts)) {
+        setPosts(livePosts);
+      }
+    } catch (err) {
+      console.warn('Supabase data refresh notice:', err);
+    }
   };
 
   useEffect(() => {
@@ -133,6 +150,48 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
       setIsFirstTimeSetup(true);
       setShowProfileSetupModal(true);
     }
+
+    // Subscribe to real-time incoming chat messages across the network
+    const unsubscribeChat = connectivityService.subscribeToRealtimeChat(
+      user,
+      (newMsg, participant) => {
+        setConversations((prevConvs) => {
+          const exists = prevConvs.find((c) => c.participant.id === participant.id);
+          if (exists) {
+            return prevConvs.map((c) =>
+              c.participant.id === participant.id
+                ? {
+                    ...c,
+                    participant,
+                    lastMessage: newMsg.content,
+                    lastMessageTime: newMsg.timestamp,
+                    unreadCount: (c.unreadCount || 0) + 1,
+                    messages: [...c.messages, newMsg],
+                  }
+                : c
+            );
+          } else {
+            return [
+              {
+                id: `conv-${participant.id}`,
+                participant,
+                lastMessage: newMsg.content,
+                lastMessageTime: newMsg.timestamp,
+                unreadCount: 1,
+                messages: [newMsg],
+              },
+              ...prevConvs,
+            ];
+          }
+        });
+
+        showToast(`💬 New message from ${participant.name}: "${newMsg.content.substring(0, 30)}..."`);
+      }
+    );
+
+    return () => {
+      unsubscribeChat();
+    };
   }, [user]);
 
   const handleCompleteProfileSetup = (data: {
@@ -173,11 +232,11 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
   const isViewingSelf = activeProfile.id === currentUserMapped.id || activeProfile.id === 'current-user-real';
 
   // Handle Post Creation
-  const handleCreatePost = (e: React.FormEvent) => {
+  const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPostContent.trim()) return;
 
-    connectivityService.createPost(user, {
+    await connectivityService.createPost(user, {
       content: newPostContent.trim(),
       imageUrl: newPostImage.trim() || undefined,
       codeSnippet: showCodeInput && newPostCode.trim() ? { language: newPostCodeLang, code: newPostCode.trim() } : undefined,
@@ -247,13 +306,19 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
   };
 
   // Handle Send Chat Message
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatMessageText.trim() || !activeChatUser) return;
 
-    const updated = connectivityService.sendMessage(activeChatUser.id, chatMessageText.trim(), user);
-    setConversations(updated);
+    const messageText = chatMessageText.trim();
     setChatMessageText('');
+
+    const { updatedConversations } = await connectivityService.sendMessage(
+      activeChatUser,
+      messageText,
+      user
+    );
+    setConversations(updatedConversations);
   };
 
   // Open chat with a specific user from profile or story
@@ -440,6 +505,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
           {/* Network Directory & Peer Discovery */}
           <ConnectivityDirectory
             users={users}
+            currentUser={user}
             onSelectUser={(targetUser) => {
               setViewingUser(targetUser);
               setActiveTab('profile');
