@@ -8,8 +8,15 @@ import { createServer as createViteServer } from 'vite';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const getDirname = () => {
+  if (typeof __dirname !== 'undefined') return __dirname;
+  try {
+    return path.dirname(fileURLToPath(import.meta.url));
+  } catch {
+    return process.cwd();
+  }
+};
+const appDir = getDirname();
 
 const app = express();
 const PORT = 3000;
@@ -18,14 +25,14 @@ app.use(express.json({ limit: '10mb' }));
 
 // Lazy initialization of GoogleGenAI client with required header
 let aiClient: GoogleGenAI | null = null;
-function getAIClient(): GoogleGenAI {
+function getAIClient(): GoogleGenAI | null {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return null;
+  }
   if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.warn('GEMINI_API_KEY is not set in environment.');
-    }
     aiClient = new GoogleGenAI({
-      apiKey: apiKey || '',
+      apiKey,
       httpOptions: {
         headers: {
           'User-Agent': 'aistudio-build',
@@ -219,29 +226,31 @@ Guidelines:
   // Tier 1: Try Gemini
   try {
     const ai = getAIClient();
-    const candidateModels = thinkingMode
-      ? ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.1-flash-lite']
-      : ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+    if (ai) {
+      const candidateModels = thinkingMode
+        ? ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.1-flash-lite']
+        : ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
 
-    let geminiSuccess = false;
-    for (const candidate of candidateModels) {
-      try {
-        const response = await ai.models.generateContent({
-          model: candidate,
-          contents,
-          config,
-        });
-        if (response.text) {
-          reply = response.text;
-          usedModel = candidate;
-          geminiSuccess = true;
-          break;
+      let geminiSuccess = false;
+      for (const candidate of candidateModels) {
+        try {
+          const response = await ai.models.generateContent({
+            model: candidate,
+            contents,
+            config,
+          });
+          if (response.text) {
+            reply = response.text;
+            usedModel = candidate;
+            geminiSuccess = true;
+            break;
+          }
+        } catch (err: any) {
+          console.warn(`Gemini candidate ${candidate} unavailable (${err?.status || err?.message || 'error'}), checking next candidate...`);
         }
-      } catch (err: any) {
-        console.warn(`Gemini candidate ${candidate} unavailable (${err?.status || err?.message || 'error'}), checking next candidate...`);
       }
+      if (!geminiSuccess) throw new Error('All Gemini candidate models unavailable');
     }
-    if (!geminiSuccess) throw new Error('All Gemini candidate models unavailable');
   } catch (geminiErr) {
     // Tier 2: Try OpenAI
     const openai = getOpenAIClient();
@@ -361,31 +370,33 @@ Guidelines:
   // Tier 1: Try Gemini Streaming with fallback models
   try {
     const ai = getAIClient();
-    const candidateModels = thinkingMode
-      ? ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.1-flash-lite']
-      : ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+    if (ai) {
+      const candidateModels = thinkingMode
+        ? ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.1-flash-lite']
+        : ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
 
-    for (const candidate of candidateModels) {
-      try {
-        const streamResponse = await ai.models.generateContentStream({
-          model: candidate,
-          contents,
-          config,
-        });
+      for (const candidate of candidateModels) {
+        try {
+          const streamResponse = await ai.models.generateContentStream({
+            model: candidate,
+            contents,
+            config,
+          });
 
-        for await (const chunk of streamResponse) {
-          const chunkText = chunk.text;
-          if (chunkText) {
-            res.write(`data: ${JSON.stringify({ chunk: chunkText })}\n\n`);
+          for await (const chunk of streamResponse) {
+            const chunkText = chunk.text;
+            if (chunkText) {
+              res.write(`data: ${JSON.stringify({ chunk: chunkText })}\n\n`);
+            }
           }
-        }
 
-        res.write(`data: ${JSON.stringify({ done: true, modelUsed: candidate })}\n\n`);
-        res.end();
-        streamCompleted = true;
-        break;
-      } catch (candidateErr: any) {
-        console.warn(`Gemini candidate ${candidate} stream unavailable (${candidateErr?.status || candidateErr?.message || 'error'}), checking next candidate...`);
+          res.write(`data: ${JSON.stringify({ done: true, modelUsed: candidate })}\n\n`);
+          res.end();
+          streamCompleted = true;
+          break;
+        } catch (candidateErr: any) {
+          console.warn(`Gemini candidate ${candidate} stream unavailable (${candidateErr?.status || candidateErr?.message || 'error'}), checking next candidate...`);
+        }
       }
     }
   } catch (allGeminiErr) {
@@ -611,24 +622,26 @@ Generate structured JSON containing:
     let parsedSummary: any = null;
     let usedModel = 'gemini-3.7-flash';
 
-    const candidateModels = ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'];
+    const candidateModels = ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
     let geminiSuccess = false;
 
-    for (const candidate of candidateModels) {
-      try {
-        const response = await ai.models.generateContent({
-          model: candidate,
-          contents: prompt,
-          config,
-        });
-        if (response.text) {
-          parsedSummary = JSON.parse(response.text);
-          usedModel = candidate;
-          geminiSuccess = true;
-          break;
+    if (ai) {
+      for (const candidate of candidateModels) {
+        try {
+          const response = await ai.models.generateContent({
+            model: candidate,
+            contents: prompt,
+            config,
+          });
+          if (response.text) {
+            parsedSummary = JSON.parse(response.text);
+            usedModel = candidate;
+            geminiSuccess = true;
+            break;
+          }
+        } catch (candidateErr: any) {
+          console.warn(`Gemini summarize candidate ${candidate} failed (${candidateErr?.status || candidateErr?.message || 'error'}), trying next...`);
         }
-      } catch (candidateErr: any) {
-        console.warn(`Gemini summarize candidate ${candidate} failed (${candidateErr?.status || candidateErr?.message || 'error'}), trying next...`);
       }
     }
 
@@ -847,77 +860,79 @@ Return a valid JSON object matching the exact schema.`;
 
     const candidateModels = useHighThinking
       ? ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.1-flash-lite']
-      : ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'];
+      : ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
 
     let geminiSuccess = false;
     const ai = getAIClient();
 
-    for (const candidate of candidateModels) {
-      try {
-        const config: any = {
-          systemInstruction: 'You are an advanced cybersecurity and employment fraud detection AI. Evaluate job opportunities with extreme precision.',
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              riskScore: {
-                type: Type.INTEGER,
-                description: 'Risk score from 0 (completely safe/verified) to 100 (extreme scam/fraud danger).',
-              },
-              riskLevel: {
-                type: Type.STRING,
-                description: 'One of: "HIGH RISK", "MODERATE RISK", "LOW RISK", "VERIFIED SAFE".',
-              },
-              summary: {
-                type: Type.STRING,
-                description: '1-2 sentence overall risk verdict.',
-              },
-              detectedSignals: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    title: { type: Type.STRING },
-                    description: { type: Type.STRING },
-                    severity: { type: Type.STRING, description: '"high", "medium", or "low"' },
-                    icon: { type: Type.STRING, description: 'Icon name like warning, gpp_maybe, help, money_off, link_off' },
+    if (ai) {
+      for (const candidate of candidateModels) {
+        try {
+          const config: any = {
+            systemInstruction: 'You are an advanced cybersecurity and employment fraud detection AI. Evaluate job opportunities with extreme precision.',
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                riskScore: {
+                  type: Type.INTEGER,
+                  description: 'Risk score from 0 (completely safe/verified) to 100 (extreme scam/fraud danger).',
+                },
+                riskLevel: {
+                  type: Type.STRING,
+                  description: 'One of: "HIGH RISK", "MODERATE RISK", "LOW RISK", "VERIFIED SAFE".',
+                },
+                summary: {
+                  type: Type.STRING,
+                  description: '1-2 sentence overall risk verdict.',
+                },
+                detectedSignals: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      title: { type: Type.STRING },
+                      description: { type: Type.STRING },
+                      severity: { type: Type.STRING, description: '"high", "medium", or "low"' },
+                      icon: { type: Type.STRING, description: 'Icon name like warning, gpp_maybe, help, money_off, link_off' },
+                    },
+                    required: ['title', 'description', 'severity', 'icon'],
                   },
-                  required: ['title', 'description', 'severity', 'icon'],
+                },
+                recommendation: {
+                  type: Type.STRING,
+                  description: 'Direct security and verification recommendation for the student.',
+                },
+                verificationChecklist: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                  description: '3-4 actionable verification steps.',
                 },
               },
-              recommendation: {
-                type: Type.STRING,
-                description: 'Direct security and verification recommendation for the student.',
-              },
-              verificationChecklist: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-                description: '3-4 actionable verification steps.',
-              },
+              required: ['riskScore', 'riskLevel', 'summary', 'detectedSignals', 'recommendation', 'verificationChecklist'],
             },
-            required: ['riskScore', 'riskLevel', 'summary', 'detectedSignals', 'recommendation', 'verificationChecklist'],
-          },
-        };
-
-        if (useHighThinking && candidate === 'gemini-3.1-pro-preview') {
-          config.thinkingConfig = {
-            thinkingLevel: ThinkingLevel.HIGH,
           };
+
+          if (useHighThinking && candidate === 'gemini-3.1-pro-preview') {
+            config.thinkingConfig = {
+              thinkingLevel: ThinkingLevel.HIGH,
+            };
+          }
+
+          const response = await ai.models.generateContent({
+            model: candidate,
+            contents: prompt,
+            config,
+          });
+
+          const jsonText = response.text?.trim() || '{}';
+          parsedData = JSON.parse(jsonText);
+          usedModel = candidate;
+          geminiSuccess = true;
+          break;
+        } catch (geminiCandidateErr: any) {
+          console.warn(`Gemini scan opportunity candidate ${candidate} failed:`, geminiCandidateErr?.status || geminiCandidateErr?.message);
         }
-
-        const response = await ai.models.generateContent({
-          model: candidate,
-          contents: prompt,
-          config,
-        });
-
-        const jsonText = response.text?.trim() || '{}';
-        parsedData = JSON.parse(jsonText);
-        usedModel = candidate;
-        geminiSuccess = true;
-        break;
-      } catch (geminiCandidateErr: any) {
-        console.warn(`Gemini scan opportunity candidate ${candidate} failed:`, geminiCandidateErr?.status || geminiCandidateErr?.message);
       }
     }
 
@@ -1004,25 +1019,27 @@ app.post('/api/ai/extract-skills', async (req, res) => {
     let skills: string[] = [];
 
     if (!skills || skills.length === 0) {
-      const candidateSkillModels = ['gemini-3.1-flash-lite', 'gemini-3.7-flash', 'gemini-2.5-flash'];
+      const candidateSkillModels = ['gemini-3.1-flash-lite', 'gemini-3.7-flash', 'gemini-flash-latest'];
       const ai = getAIClient();
-      for (const candidate of candidateSkillModels) {
-        try {
-          const response = await ai.models.generateContent({
-            model: candidate,
-            contents: `Suggest 6 in-demand skills or related sub-topics for a "${role}" role matching user query: "${query || ''}". Return JSON array of strings only.`,
-            config: {
-              responseMimeType: 'application/json',
-              responseSchema: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
+      if (ai) {
+        for (const candidate of candidateSkillModels) {
+          try {
+            const response = await ai.models.generateContent({
+              model: candidate,
+              contents: `Suggest 6 in-demand skills or related sub-topics for a "${role}" role matching user query: "${query || ''}". Return JSON array of strings only.`,
+              config: {
+                responseMimeType: 'application/json',
+                responseSchema: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                },
               },
-            },
-          });
-          skills = JSON.parse(response.text || '[]');
-          if (Array.isArray(skills) && skills.length > 0) break;
-        } catch (candidateErr: any) {
-          console.warn(`Gemini extract-skills model ${candidate} failed:`, candidateErr?.status || candidateErr?.message);
+            });
+            skills = JSON.parse(response.text || '[]');
+            if (Array.isArray(skills) && skills.length > 0) break;
+          } catch (candidateErr: any) {
+            console.warn(`Gemini extract-skills model ${candidate} failed:`, candidateErr?.status || candidateErr?.message);
+          }
         }
       }
     }
@@ -1080,71 +1097,73 @@ Produce a detailed learning pathway containing:
 5. 3 recommended high-value projects and practice resources.`;
 
     let roadmapData: any = null;
-    const candidateRoadmapModels = ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.1-flash-lite'];
+    const candidateRoadmapModels = ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
     let geminiSuccess = false;
     const ai = getAIClient();
 
-    for (const candidate of candidateRoadmapModels) {
-      try {
-        const config: any = {
-          systemInstruction: 'You are an elite Silicon Valley technical career architect.',
-          responseMimeType: 'application/json',
-          thinkingConfig: candidate === 'gemini-3.1-pro-preview' ? {
-            thinkingLevel: ThinkingLevel.HIGH,
-          } : undefined,
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              targetRole: { type: Type.STRING },
-              readinessScore: { type: Type.INTEGER },
-              estimatedTimelineMonths: { type: Type.INTEGER },
-              nodes: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    id: { type: Type.STRING },
-                    title: { type: Type.STRING },
-                    status: { type: Type.STRING, description: '"completed", "current", or "upcoming"' },
-                    progress: { type: Type.INTEGER },
-                    description: { type: Type.STRING },
-                    subtopics: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    recommendedResources: {
-                      type: Type.ARRAY,
-                      items: {
-                        type: Type.OBJECT,
-                        properties: {
-                          title: { type: Type.STRING },
-                          type: { type: Type.STRING },
-                          link: { type: Type.STRING },
+    if (ai) {
+      for (const candidate of candidateRoadmapModels) {
+        try {
+          const config: any = {
+            systemInstruction: 'You are an elite Silicon Valley technical career architect.',
+            responseMimeType: 'application/json',
+            thinkingConfig: candidate === 'gemini-3.1-pro-preview' ? {
+              thinkingLevel: ThinkingLevel.HIGH,
+            } : undefined,
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                targetRole: { type: Type.STRING },
+                readinessScore: { type: Type.INTEGER },
+                estimatedTimelineMonths: { type: Type.INTEGER },
+                nodes: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      id: { type: Type.STRING },
+                      title: { type: Type.STRING },
+                      status: { type: Type.STRING, description: '"completed", "current", or "upcoming"' },
+                      progress: { type: Type.INTEGER },
+                      description: { type: Type.STRING },
+                      subtopics: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      recommendedResources: {
+                        type: Type.ARRAY,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            title: { type: Type.STRING },
+                            type: { type: Type.STRING },
+                            link: { type: Type.STRING },
+                          },
+                          required: ['title', 'type'],
                         },
-                        required: ['title', 'type'],
                       },
                     },
+                    required: ['id', 'title', 'status', 'progress', 'description'],
                   },
-                  required: ['id', 'title', 'status', 'progress', 'description'],
+                },
+                aiInsight: {
+                  type: Type.STRING,
+                  description: 'High-level strategic takeaway from Nebula AI.',
                 },
               },
-              aiInsight: {
-                type: Type.STRING,
-                description: 'High-level strategic takeaway from Nebula AI.',
-              },
+              required: ['targetRole', 'readinessScore', 'estimatedTimelineMonths', 'nodes', 'aiInsight'],
             },
-            required: ['targetRole', 'readinessScore', 'estimatedTimelineMonths', 'nodes', 'aiInsight'],
-          },
-        };
+          };
 
-        const response = await ai.models.generateContent({
-          model: candidate,
-          contents: prompt,
-          config,
-        });
+          const response = await ai.models.generateContent({
+            model: candidate,
+            contents: prompt,
+            config,
+          });
 
-        roadmapData = JSON.parse(response.text || '{}');
-        geminiSuccess = true;
-        break;
-      } catch (candidateErr: any) {
-        console.warn(`Gemini roadmap model ${candidate} failed:`, candidateErr?.status || candidateErr?.message);
+          roadmapData = JSON.parse(response.text || '{}');
+          geminiSuccess = true;
+          break;
+        } catch (candidateErr: any) {
+          console.warn(`Gemini roadmap model ${candidate} failed:`, candidateErr?.status || candidateErr?.message);
+        }
       }
     }
 
@@ -1237,124 +1256,9 @@ Produce a detailed learning pathway containing:
   }
 });
 
-// 5. YouTube Video Metadata Proxy Endpoint (supports optional YOUTUBE_API_KEY with oEmbed fallback)
-app.post('/api/youtube/metadata', async (req, res) => {
-  try {
-    const { videoId, url } = req.body;
-    let targetVideoId = videoId;
-
-    if (!targetVideoId && url) {
-      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-      if (match) targetVideoId = match[1];
-    }
-
-    if (!targetVideoId) {
-      return res.status(400).json({ error: 'Valid YouTube video ID or URL required' });
-    }
-
-    const fallback = {
-      title: `YouTube Technical Lab (${targetVideoId})`,
-      channel: 'YouTube Creator',
-      channelUrl: `https://www.youtube.com/watch?v=${targetVideoId}`,
-      thumbnail: `https://img.youtube.com/vi/${targetVideoId}/hqdefault.jpg`,
-      durationSeconds: 1200,
-      durationFormatted: '20m 00s',
-    };
-
-    // Tier 1: If YouTube API Key is available, query official YouTube Data API v3
-    const ytApiKey = process.env.YOUTUBE_API_KEY || process.env.GEMINI_API_KEY;
-    if (ytApiKey) {
-      try {
-        const ytRes = await fetch(
-          `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${targetVideoId}&key=${ytApiKey}`
-        );
-        if (ytRes.ok) {
-          const ytData = await ytRes.json();
-          if (ytData.items && ytData.items.length > 0) {
-            const item = ytData.items[0];
-            const snippet = item.snippet;
-            const contentDetails = item.contentDetails;
-
-            // Parse ISO 8601 duration (PT1H2M10S -> seconds)
-            let durationSeconds = 1200;
-            if (contentDetails?.duration) {
-              const durMatch = contentDetails.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-              if (durMatch) {
-                const hours = parseInt(durMatch[1] || '0', 10);
-                const minutes = parseInt(durMatch[2] || '0', 10);
-                const seconds = parseInt(durMatch[3] || '0', 10);
-                durationSeconds = hours * 3600 + minutes * 60 + seconds;
-              }
-            }
-
-            const hrs = Math.floor(durationSeconds / 3600);
-            const mins = Math.floor((durationSeconds % 3600) / 60);
-            const secs = durationSeconds % 60;
-            const durationFormatted =
-              hrs > 0
-                ? `${hrs}h ${mins.toString().padStart(2, '0')}m`
-                : `${mins}m ${secs.toString().padStart(2, '0')}s`;
-
-            return res.json({
-              title: snippet.title || fallback.title,
-              channel: snippet.channelTitle || fallback.channel,
-              channelUrl: snippet.channelId ? `https://www.youtube.com/channel/${snippet.channelId}` : fallback.channelUrl,
-              thumbnail: snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || fallback.thumbnail,
-              durationSeconds,
-              durationFormatted,
-            });
-          }
-        }
-      } catch (e) {
-        console.warn('YouTube Data API fetch failed, trying oEmbed:', e);
-      }
-    }
-
-    // Tier 2: Official YouTube oEmbed service
-    try {
-      const oembedRes = await fetch(
-        `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${targetVideoId}&format=json`
-      );
-      if (oembedRes.ok) {
-        const oembedData = await oembedRes.json();
-        return res.json({
-          title: oembedData.title || fallback.title,
-          channel: oembedData.author_name || fallback.channel,
-          channelUrl: oembedData.author_url || fallback.channelUrl,
-          thumbnail: oembedData.thumbnail_url || fallback.thumbnail,
-          durationSeconds: 1200,
-          durationFormatted: '20m 00s',
-        });
-      }
-    } catch (e) {
-      console.warn('YouTube oEmbed fetch failed, trying noembed:', e);
-    }
-
-    // Tier 3: NoEmbed fallback
-    try {
-      const noembedRes = await fetch(
-        `https://noembed.com/embed?url=https://www.youtube.com/watch?v=${targetVideoId}`
-      );
-      if (noembedRes.ok) {
-        const noembedData = await noembedRes.json();
-        return res.json({
-          title: noembedData.title || fallback.title,
-          channel: noembedData.author_name || fallback.channel,
-          channelUrl: noembedData.author_url || fallback.channelUrl,
-          thumbnail: noembedData.thumbnail_url || fallback.thumbnail,
-          durationSeconds: 1200,
-          durationFormatted: '20m 00s',
-        });
-      }
-    } catch (e) {
-      // Fall through to default
-    }
-
-    return res.json(fallback);
-  } catch (error: any) {
-    console.error('Error in /api/youtube/metadata:', error);
-    res.status(500).json({ error: 'Failed to fetch YouTube metadata' });
-  }
+// Explicit 404 for unhandled API routes so frontend fetch doesn't receive HTML SPA fallback
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: `API endpoint ${req.method} ${req.originalUrl} not found` });
 });
 
 // Vite middleware for development & static serving for production
@@ -1366,7 +1270,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = path.join(appDir, 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
