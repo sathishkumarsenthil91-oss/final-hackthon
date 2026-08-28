@@ -39,6 +39,39 @@ const BASE_STORAGE_KEYS = {
   SETUP_DONE: 'industryskill_connectivity_setup_done_v4',
 };
 
+// Real Community verified peer accounts - purely fetched from Supabase & database storage
+export const DEFAULT_COMMUNITY_USERS: NetworkUser[] = [];
+export const DEFAULT_COMMUNITY_POSTS: NetworkPost[] = [];
+
+// Helper to filter out any legacy demo or mock accounts
+export function isDemoId(id: string): boolean {
+  if (!id) return true;
+  return (
+    id.startsWith('user-alex-chen') ||
+    id.startsWith('user-sarah-lin') ||
+    id.startsWith('user-rohit-sharma') ||
+    id.startsWith('user-maya-patel') ||
+    id.startsWith('user-david-vance') ||
+    id.startsWith('user-emily-zhao') ||
+    id.startsWith('user-karthik-nair') ||
+    id.startsWith('user-ananya-gupta') ||
+    id.startsWith('user-priya-') ||
+    id.startsWith('user-marcus-') ||
+    id.startsWith('user-elena-') ||
+    id.startsWith('user-rahul-') ||
+    id.startsWith('user-sophia-') ||
+    id.startsWith('user-arjun-') ||
+    id.startsWith('post-alex-') ||
+    id.startsWith('post-sarah-') ||
+    id.startsWith('post-rohit-') ||
+    id.startsWith('post-priya-') ||
+    id.startsWith('post-elena-') ||
+    id.startsWith('post-marcus-') ||
+    id.startsWith('post-rahul-') ||
+    id.startsWith('demo-')
+  );
+}
+
 // Map a raw Supabase profile row into a clean NetworkUser object
 export function mapRowToNetworkUser(row: any, currentUserId?: string): NetworkUser {
   const rawHandle = row.username || (row.email ? row.email.split('@')[0] : 'developer');
@@ -235,7 +268,6 @@ export const connectivityService = {
 
       // Sync to Supabase
       if (existingSupabaseClient && user.email) {
-        const cleanUsername = data.userId.replace(/^@/, '');
         await existingSupabaseClient.from('profiles').upsert(
           {
             email: user.email.toLowerCase().trim(),
@@ -262,6 +294,7 @@ export const connectivityService = {
       return this.getUsers(currentUser);
     }
 
+    let supabaseResults: NetworkUser[] = [];
     if (existingSupabaseClient) {
       try {
         const { data, error } = await existingSupabaseClient
@@ -274,41 +307,51 @@ export const connectivityService = {
 
         if (!error && Array.isArray(data)) {
           const currentEmail = currentUser.email?.toLowerCase().trim();
-          const mappedUsers = data
-            .filter((row: any) => row.email?.toLowerCase().trim() !== currentEmail)
+          supabaseResults = data
+            .filter((row: any) => row.email?.toLowerCase().trim() !== currentEmail && !isDemoId(row.id))
             .map((row: any) => mapRowToNetworkUser(row, currentMapped.id));
-
-          // Enhance with follow state from local cache
-          const localUsers = this.getLocalUsers(currentUser);
-          const followMap = new Map<string, boolean>(localUsers.map((u) => [u.id, Boolean(u.isFollowing)]));
-
-          return mappedUsers.map((u) => ({
-            ...u,
-            isFollowing: Boolean(followMap.get(u.id)),
-          }));
         }
       } catch (err) {
         console.warn('Supabase search users notice:', err);
       }
     }
 
-    // Fallback to searching local cache
-    const allUsers = this.getLocalUsers(currentUser);
+    // Search local users
+    const allUsers = this.getUsers(currentUser);
     const q = cleanQuery.toLowerCase();
-    return allUsers.filter(
+    const localMatches = allUsers.filter(
       (u) =>
-        u.name.toLowerCase().includes(q) ||
-        u.username?.toLowerCase().includes(q) ||
-        u.userId?.toLowerCase().includes(q) ||
-        u.headline.toLowerCase().includes(q) ||
-        u.skills.some((s) => s.toLowerCase().includes(q))
+        !isDemoId(u.id) &&
+        (u.name.toLowerCase().includes(q) ||
+          u.username?.toLowerCase().includes(q) ||
+          u.userId?.toLowerCase().includes(q) ||
+          u.headline.toLowerCase().includes(q) ||
+          u.company.toLowerCase().includes(q) ||
+          u.role.toLowerCase().includes(q) ||
+          u.skills.some((s) => s.toLowerCase().includes(q)) ||
+          u.interests?.some((i) => i.toLowerCase().includes(q)))
     );
+
+    const merged = new Map<string, NetworkUser>();
+    for (const u of localMatches) merged.set(u.id, u);
+    for (const u of supabaseResults) merged.set(u.id, u);
+
+    const localMap = new Map<string, NetworkUser>(allUsers.map((u) => [u.id, u]));
+    return Array.from(merged.values()).map((u) => {
+      const local = localMap.get(u.id);
+      return {
+        ...u,
+        isFollowing: Boolean(local?.isFollowing || u.isFollowing),
+      };
+    });
   },
 
   // Fetch real users from Supabase profiles
   async fetchUsers(currentUser: UserProfile): Promise<NetworkUser[]> {
     const currentMapped = mapProfileToNetworkUser(currentUser);
     const currentEmail = currentUser.email?.toLowerCase().trim();
+
+    let liveMappedUsers: NetworkUser[] = [];
 
     if (existingSupabaseClient) {
       try {
@@ -322,35 +365,57 @@ export const connectivityService = {
           .limit(50);
 
         if (!error && Array.isArray(data)) {
-          const peers = data.filter((row: any) => row.email?.toLowerCase().trim() !== currentEmail);
-          const mapped = peers.map((row: any) => mapRowToNetworkUser(row, currentMapped.id));
-
-          // Merge with local follow / privacy state
-          const localUsers = this.getLocalUsers(currentUser);
-          const localMap = new Map<string, NetworkUser>(localUsers.map((u) => [u.id, u]));
-
-          const finalUsers: NetworkUser[] = mapped.map((u) => {
-            const local = localMap.get(u.id);
-            if (local) {
-              return {
-                ...u,
-                isFollowing: Boolean(local.isFollowing),
-                isFriend: Boolean(local.isFriend),
-                followersCount: Number(local.followersCount || 0),
-              };
-            }
-            return u;
-          });
-
-          this.saveLocalUsers(finalUsers, currentUser);
-          return finalUsers;
+          const peers = data.filter(
+            (row: any) => row.email?.toLowerCase().trim() !== currentEmail && !isDemoId(row.id)
+          );
+          liveMappedUsers = peers.map((row: any) => mapRowToNetworkUser(row, currentMapped.id));
         }
       } catch (err) {
         console.warn('Supabase fetchUsers notice:', err);
       }
     }
 
-    return this.getLocalUsers(currentUser);
+    // Merge live Supabase profiles + local stored users (excluding demo accounts)
+    const localUsers = this.getLocalUsers(currentUser);
+    const localMap = new Map<string, NetworkUser>(localUsers.map((u) => [u.id, u]));
+    const combinedMap = new Map<string, NetworkUser>();
+
+    // 1. Add non-demo local users
+    for (const u of localUsers) {
+      if (!isDemoId(u.id) && u.id !== currentMapped.id) {
+        combinedMap.set(u.id, u);
+      }
+    }
+
+    // 2. Overlay live registered Supabase profiles
+    for (const u of liveMappedUsers) {
+      if (!isDemoId(u.id) && u.id !== currentMapped.id) {
+        const local = localMap.get(u.id);
+        combinedMap.set(
+          u.id,
+          local
+            ? {
+                ...u,
+                isFollowing: Boolean(local.isFollowing),
+                isFriend: Boolean(local.isFriend),
+                followersCount: Number(local.followersCount || u.followersCount),
+              }
+            : u
+        );
+      }
+    }
+
+    const finalUsers = Array.from(combinedMap.values()).filter(
+      (u) =>
+        !isDemoId(u.id) &&
+        u.id !== currentMapped.id &&
+        u.id !== 'current-user-real' &&
+        u.id !== 'current-user' &&
+        (!currentEmail || !u.userId?.toLowerCase().includes(currentEmail.split('@')[0]))
+    );
+
+    this.saveLocalUsers(finalUsers, currentUser);
+    return finalUsers;
   },
 
   // Synchronous getter for immediate render from cache
@@ -360,33 +425,45 @@ export const connectivityService = {
 
   getLocalUsers(currentUser: UserProfile): NetworkUser[] {
     try {
+      const currentMapped = mapProfileToNetworkUser(currentUser);
+      const currentEmail = currentUser.email?.toLowerCase().trim();
       const storageKey = getStorageKey(BASE_STORAGE_KEYS.USERS, currentUser);
       const stored = localStorage.getItem(storageKey);
+
+      let baseUsers: NetworkUser[] = [];
       if (stored) {
-        const parsed: NetworkUser[] = JSON.parse(stored);
-        // Filter out any legacy dummy mock accounts (Priya, Marcus, Elena, Rahul)
-        const clean = parsed.filter(
-          (u) =>
-            !u.id.startsWith('user-priya-') &&
-            !u.id.startsWith('user-marcus-') &&
-            !u.id.startsWith('user-elena-') &&
-            !u.id.startsWith('user-rahul-') &&
-            !u.id.startsWith('user-sophia-') &&
-            !u.id.startsWith('user-arjun-') &&
-            !u.id.startsWith('user-sarah-')
-        );
-        return clean;
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            baseUsers = parsed;
+          }
+        } catch {
+          baseUsers = [];
+        }
       }
+
+      // Filter out demo accounts, self, and system users
+      const cleanUsers = baseUsers.filter(
+        (u) =>
+          !isDemoId(u.id) &&
+          u.id !== currentMapped.id &&
+          u.id !== 'current-user' &&
+          u.id !== 'current-user-real' &&
+          (!currentEmail || !u.userId?.toLowerCase().includes(currentEmail.split('@')[0]))
+      );
+
+      return cleanUsers;
     } catch (e) {
       console.error('Error fetching connectivity users from cache:', e);
+      return [];
     }
-    return [];
   },
 
   saveLocalUsers(users: NetworkUser[], currentUser?: UserProfile): void {
     try {
+      const cleanUsers = users.filter((u) => !isDemoId(u.id));
       const storageKey = getStorageKey(BASE_STORAGE_KEYS.USERS, currentUser);
-      localStorage.setItem(storageKey, JSON.stringify(users));
+      localStorage.setItem(storageKey, JSON.stringify(cleanUsers));
     } catch (e) {
       console.error('Error saving users:', e);
     }
@@ -404,36 +481,38 @@ export const connectivityService = {
 
         if (!error && Array.isArray(data) && data.length > 0) {
           const currentMapped = mapProfileToNetworkUser(currentUser);
-          const mappedPosts: NetworkPost[] = data.map((p: any) => ({
-            id: p.id,
-            author: {
-              id: p.author_id,
-              name: p.author?.name || 'Verified Developer',
-              avatarUrl:
-                p.author?.avatar_url ||
-                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
-              headline: p.author?.headline || 'Engineer',
-              company: p.author?.college || 'IndustrySkill',
-              isCurrentUser: p.author_id === currentMapped.id || p.author?.email === currentUser.email,
-            },
-            timestamp: new Date(p.created_at).toLocaleDateString(undefined, {
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            }),
-            content: p.content,
-            tags: p.tags || ['#SoftwareEngineering'],
-            skills: p.skills || ['WebDev'],
-            likesCount: Number(p.likes_count || 0),
-            isLiked: false,
-            commentsCount: Number(p.comments_count || 0),
-            repostsCount: Number(p.reposts_count || 0),
-            imageUrl: p.image_url,
-            codeSnippet: p.code_snippet,
-            poll: p.poll,
-            comments: [],
-          }));
+          const mappedPosts: NetworkPost[] = data
+            .filter((p: any) => !isDemoId(p.id) && !isDemoId(p.author_id))
+            .map((p: any) => ({
+              id: p.id,
+              author: {
+                id: p.author_id,
+                name: p.author?.name || 'Verified Developer',
+                avatarUrl:
+                  p.author?.avatar_url ||
+                  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+                headline: p.author?.headline || 'Engineer',
+                company: p.author?.college || 'IndustrySkill',
+                isCurrentUser: p.author_id === currentMapped.id || p.author?.email === currentUser.email,
+              },
+              timestamp: new Date(p.created_at).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+              content: p.content,
+              tags: p.tags || ['#SoftwareEngineering'],
+              skills: p.skills || ['WebDev'],
+              likesCount: Number(p.likes_count || 0),
+              isLiked: false,
+              commentsCount: Number(p.comments_count || 0),
+              repostsCount: Number(p.reposts_count || 0),
+              imageUrl: p.image_url,
+              codeSnippet: p.code_snippet,
+              poll: p.poll,
+              comments: [],
+            }));
 
           this.saveLocalPosts(mappedPosts, currentUser);
           return mappedPosts;
@@ -452,13 +531,9 @@ export const connectivityService = {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         const parsed: NetworkPost[] = JSON.parse(stored);
-        return parsed.filter(
-          (p) =>
-            !p.id.startsWith('post-priya-') &&
-            !p.id.startsWith('post-elena-') &&
-            !p.id.startsWith('post-marcus-') &&
-            !p.id.startsWith('post-rahul-')
-        );
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter((p) => !isDemoId(p.id) && !isDemoId(p.author?.id));
+        }
       }
     } catch (e) {
       console.error('Error fetching posts:', e);
@@ -468,8 +543,9 @@ export const connectivityService = {
 
   saveLocalPosts(posts: NetworkPost[], currentUser?: UserProfile): void {
     try {
+      const cleanPosts = posts.filter((p) => !isDemoId(p.id) && !isDemoId(p.author?.id));
       const storageKey = getStorageKey(BASE_STORAGE_KEYS.POSTS, currentUser);
-      localStorage.setItem(storageKey, JSON.stringify(posts));
+      localStorage.setItem(storageKey, JSON.stringify(cleanPosts));
     } catch (e) {
       console.error('Error saving posts:', e);
     }
@@ -600,7 +676,12 @@ export const connectivityService = {
       if (stored) {
         const parsed: NetworkConversation[] = JSON.parse(stored);
         // Clean out legacy demo conversations
-        return parsed.filter((c) => !c.id.startsWith('conv-priya') && !c.id.startsWith('conv-marcus'));
+        return parsed.filter(
+          (c) =>
+            !c.id.startsWith('conv-priya') &&
+            !c.id.startsWith('conv-marcus') &&
+            !isDemoId(c.participant?.id)
+        );
       }
     } catch (e) {
       console.error('Error fetching conversations:', e);
@@ -610,8 +691,14 @@ export const connectivityService = {
 
   saveConversations(convs: NetworkConversation[], currentUser?: UserProfile): void {
     try {
+      const cleanConvs = convs.filter(
+        (c) =>
+          !c.id.startsWith('conv-priya') &&
+          !c.id.startsWith('conv-marcus') &&
+          !isDemoId(c.participant?.id)
+      );
       const storageKey = getStorageKey(BASE_STORAGE_KEYS.MESSAGES, currentUser);
-      localStorage.setItem(storageKey, JSON.stringify(convs));
+      localStorage.setItem(storageKey, JSON.stringify(cleanConvs));
     } catch (e) {
       console.error('Error saving conversations:', e);
     }
@@ -720,7 +807,12 @@ export const connectivityService = {
       .channel(`realtime_chat_listener_${currentMapped.id.replace(/[^a-zA-Z0-9_]/g, '_')}`)
       // 1. Listen for Realtime Broadcast events
       .on('broadcast', { event: 'chat_message' }, ({ payload }) => {
-        if (payload && (payload.receiverId === currentMapped.id || payload.receiverId === currentUser.id || payload.receiverId === currentUser.email)) {
+        if (
+          payload &&
+          (payload.receiverId === currentMapped.id ||
+            payload.receiverId === currentUser.id ||
+            payload.receiverId === currentUser.email)
+        ) {
           const incomingSender: NetworkUser = {
             id: payload.senderId,
             name: payload.senderName || 'Member',
@@ -750,7 +842,9 @@ export const connectivityService = {
             senderId: payload.senderId,
             receiverId: payload.receiverId,
             content: payload.content,
-            timestamp: payload.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp:
+              payload.timestamp ||
+              new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             isRead: false,
           };
 
@@ -767,10 +861,14 @@ export const connectivityService = {
         },
         async (payload) => {
           const newRow = payload.new as any;
-          if (newRow && (newRow.receiver_id === currentMapped.id || newRow.receiver_id === currentUser.id)) {
+          if (
+            newRow &&
+            (newRow.receiver_id === currentMapped.id || newRow.receiver_id === currentUser.id)
+          ) {
             // Fetch sender profile details if available
             let senderName = 'Member';
-            let senderAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80';
+            let senderAvatar =
+              'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80';
             let senderHeadline = 'Verified Peer';
 
             try {
@@ -783,7 +881,9 @@ export const connectivityService = {
               if (senderData) {
                 senderName = senderData.name || senderName;
                 senderAvatar = senderData.avatar_url || senderAvatar;
-                senderHeadline = senderData.headline || `${senderData.target_role || 'Developer'} • ${senderData.college || 'IndustrySkill'}`;
+                senderHeadline =
+                  senderData.headline ||
+                  `${senderData.target_role || 'Developer'} • ${senderData.college || 'IndustrySkill'}`;
               }
             } catch (err) {
               console.warn('Could not fetch message sender profile:', err);
@@ -817,7 +917,10 @@ export const connectivityService = {
               receiverId: newRow.receiver_id,
               content: newRow.content,
               timestamp: newRow.created_at
-                ? new Date(newRow.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                ? new Date(newRow.created_at).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
                 : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               isRead: Boolean(newRow.is_read),
             };
