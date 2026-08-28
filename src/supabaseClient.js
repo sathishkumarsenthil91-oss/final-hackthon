@@ -8,11 +8,9 @@ import { createClient } from "@supabase/supabase-js";
 // 3. Copy Project URL and Anon/Public Key and paste them below:
 // ============================================================================
 
-// PASTE YOUR SUPABASE PROJECT URL HERE:
-const SUPABASE_URL = "https://nzgisrrrbabedlntmcoc.supabase.co";
-
-// PASTE YOUR SUPABASE ANON / PUBLIC API KEY HERE:
-const SUPABASE_PUBLIC_KEY = "sb_publishable_CZTBEfxJPsy4EjJSMXtydw_yZ0gzyJ0";
+// SUPABASE PROJECT URL AND ANON KEY
+const SUPABASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || "https://nzgisrrrbabedlntmcoc.supabase.co";
+const SUPABASE_PUBLIC_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || "sb_publishable_CZTBEfxJPsy4EjJSMXtydw_yZ0gzyJ0";
 
 // ============================================================================
 // 🚀 EXPORT SUPABASE CLIENT

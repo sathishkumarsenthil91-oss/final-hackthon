@@ -7,8 +7,14 @@ interface BottomNavProps {
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ currentView, onNavigate }) => {
-  // Hide bottom navigation during auth/onboarding screens
-  if (currentView === 'auth' || currentView === 'onboarding' || currentView === 'login' || currentView === 'register') {
+  // Hide bottom navigation during auth/onboarding screens and when inside Connectivity (Network)
+  if (
+    currentView === 'auth' ||
+    currentView === 'onboarding' ||
+    currentView === 'login' ||
+    currentView === 'register' ||
+    currentView === 'network'
+  ) {
     return null;
   }
 

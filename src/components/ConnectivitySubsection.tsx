@@ -383,7 +383,17 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
       {/* Top Professional Header Bar */}
       <header className="sticky top-16 md:top-20 z-30 bg-white/90 dark:bg-[#131b2e]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-3 sm:px-6 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {/* Direct Back to Main App Button */}
+          <button
+            onClick={() => onNavigate('dashboard')}
+            className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-purple-950/50 text-slate-700 dark:text-slate-300 hover:text-purple-600 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shrink-0 border border-slate-200 dark:border-slate-700"
+            title="Exit Connectivity to Dashboard"
+          >
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+            <span className="hidden sm:inline">Main App</span>
+          </button>
+
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md shadow-purple-500/20 shrink-0">
             <span className="material-symbols-outlined text-[18px] sm:text-[20px]">hub</span>
           </div>
@@ -1261,7 +1271,21 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
       {/* 3. PROFILE TAB: Professional Info, Skills, Certificates, Library */}
       {/* ========================================================================= */}
       {activeTab === 'profile' && (
-        <div className="max-w-3xl mx-auto w-full px-3 sm:px-6 pt-3 sm:pt-5 space-y-4 sm:space-y-6">
+        <div className="max-w-3xl mx-auto w-full px-3 sm:px-6 pt-3 sm:pt-5 space-y-4 sm:space-y-6 pb-28">
+          {/* Back button when viewing another member's profile */}
+          {!isViewingSelf && (
+            <button
+              onClick={() => {
+                setViewingUser(null);
+                setActiveTab('home');
+              }}
+              className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#131b2e] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs w-fit"
+            >
+              <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+              <span>Back to Feed</span>
+            </button>
+          )}
+
           {/* Top Banner & Profile Header */}
           <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs overflow-hidden">
             {/* Cover Image */}
@@ -1757,7 +1781,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
       {/* ========================================================================= */}
       {/* BOTTOM NAVIGATION ONLY: Home | Chat | Profile */}
       {/* ========================================================================= */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 py-2.5 px-6 shadow-2xl">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 py-2.5 px-6 shadow-2xl pb-[max(0.625rem,env(safe-area-inset-bottom))]">
         <div className="max-w-md mx-auto flex items-center justify-around">
           {/* Home Tab */}
           <button
@@ -1836,7 +1860,12 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
       {/* 1. Create Post Modal */}
       {showCreatePostModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowCreatePostModal(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in"
+        >
           <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-4 sm:p-6 max-w-lg w-full max-h-[92vh] overflow-y-auto border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-up">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2038,7 +2067,12 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
       {/* 2. Access Requests Modal / Notification Drawer */}
       {showAccessRequestsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAccessRequestsModal(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in"
+        >
           <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2111,7 +2145,12 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
       {/* 3. Edit Profile Modal */}
       {showEditProfileModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowEditProfileModal(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in"
+        >
           <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
@@ -2192,7 +2231,12 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
       {/* 4. Active Story Viewer Modal */}
       {activeStoryUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 animate-fade-in">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setActiveStoryUser(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 animate-fade-in"
+        >
           <div className="bg-[#131b2e] rounded-3xl p-5 sm:p-6 max-w-sm w-full border border-purple-500/40 text-white shadow-2xl space-y-4 relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setActiveStoryUser(null)}

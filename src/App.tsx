@@ -73,18 +73,54 @@ export default function App() {
 
   // Sync Supabase Auth session (handles Google OAuth callback redirects and persisted sessions)
   useEffect(() => {
+    const syncUserSession = async (sessionUser: any) => {
+      if (!sessionUser) return;
+      const email = sessionUser.email || '';
+      const meta = sessionUser.user_metadata || {};
+      const fallbackName = meta.full_name || meta.name || email.split('@')[0] || 'Verified Student';
+
+      // 1. Fetch persistent profile from Supabase profiles table
+      let dbProfile: any = null;
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .or(`id.eq.${sessionUser.id},email.eq.${email.toLowerCase()}`)
+          .maybeSingle();
+        if (!error && data) {
+          dbProfile = data;
+        }
+      } catch (err) {
+        console.warn('Notice fetching profile from Supabase:', err);
+      }
+
+      const additionalData: Partial<UserProfile> = {
+        avatarUrl: dbProfile?.avatar_url || meta.avatar_url || meta.picture,
+        college: dbProfile?.college || meta.college,
+        targetRole: dbProfile?.target_role || meta.target_role,
+        headline: dbProfile?.headline,
+        bio: dbProfile?.bio,
+        phone: dbProfile?.phone,
+        degree: dbProfile?.degree,
+        gradYear: dbProfile?.grad_year,
+        gpa: dbProfile?.gpa,
+        location: dbProfile?.location,
+        githubUrl: dbProfile?.github_url,
+        linkedinUrl: dbProfile?.linkedin_url,
+        portfolioUrl: dbProfile?.portfolio_url,
+        overallReadiness: dbProfile?.overall_readiness,
+        isPrivateAccount: dbProfile?.is_private_account,
+      };
+
+      handleLoginSuccess(dbProfile?.name || fallbackName, email, additionalData);
+      setIsAuthOpen(false);
+      setCurrentView((prev) => (prev === 'auth' || prev === 'login' || prev === 'register' ? 'dashboard' : prev));
+    };
+
     // Check initial active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        const email = session.user.email || '';
-        const meta = session.user.user_metadata || {};
-        const name = meta.full_name || meta.name || email.split('@')[0] || 'Verified Student';
-        handleLoginSuccess(name, email, {
-          avatarUrl: meta.avatar_url || meta.picture,
-          college: meta.college,
-          targetRole: meta.target_role,
-        });
-        setCurrentView((prev) => (prev === 'auth' || prev === 'login' || prev === 'register' ? 'dashboard' : prev));
+        syncUserSession(session.user);
       }
     });
 
@@ -93,15 +129,7 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
-        const email = session.user.email || '';
-        const meta = session.user.user_metadata || {};
-        const name = meta.full_name || meta.name || email.split('@')[0] || 'Verified Student';
-        handleLoginSuccess(name, email, {
-          avatarUrl: meta.avatar_url || meta.picture,
-          college: meta.college,
-          targetRole: meta.target_role,
-        });
-        setCurrentView((prev) => (prev === 'auth' || prev === 'login' || prev === 'register' ? 'dashboard' : prev));
+        syncUserSession(session.user);
       }
     });
 
@@ -135,6 +163,37 @@ export default function App() {
       } catch (err) {
         console.error(err);
       }
+
+      // Asynchronously sync updates to Supabase profiles table
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user?.id) {
+          supabase
+            .from('profiles')
+            .upsert({
+              id: session.user.id,
+              email: nextUser.email,
+              name: nextUser.name,
+              avatar_url: nextUser.avatarUrl,
+              headline: nextUser.headline,
+              bio: nextUser.bio,
+              college: nextUser.college,
+              degree: nextUser.degree,
+              grad_year: nextUser.gradYear,
+              gpa: nextUser.gpa,
+              location: nextUser.location,
+              target_role: nextUser.targetRole,
+              github_url: nextUser.githubUrl,
+              linkedin_url: nextUser.linkedinUrl,
+              portfolio_url: nextUser.portfolioUrl,
+              is_private_account: Boolean(nextUser.isPrivateAccount),
+              updated_at: new Date().toISOString(),
+            })
+            .then(({ error }) => {
+              if (error) console.warn('Supabase profile sync note:', error.message);
+            });
+        }
+      });
+
       return nextUser;
     });
   };
