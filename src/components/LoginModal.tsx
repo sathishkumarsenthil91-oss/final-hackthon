@@ -34,8 +34,41 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [showForgotModal, setShowForgotModal] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const emailToReset = (resetEmail || loginEmail).trim().toLowerCase();
+    if (!emailToReset) {
+      setErrorMessage('Please enter your email address to receive password reset instructions.');
+      return;
+    }
+
+    setIsResettingPassword(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(emailToReset, {
+        redirectTo: `${window.location.origin}/`,
+      });
+
+      if (error) {
+        setErrorMessage(error.message);
+      } else {
+        setSuccessMessage(`Password reset link sent to ${emailToReset}. Please check your inbox.`);
+        setShowForgotModal(false);
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to send password reset email. Please try again.');
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -267,8 +300,43 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           </div>
         )}
 
-        {/* Login Form */}
-        {tab === 'login' ? (
+        {/* Forgot Password Sub-View */}
+        {showForgotModal ? (
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <div className="p-3 bg-blue-50 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800/50 text-[13px] text-blue-800 dark:text-blue-200">
+              Enter your email address below and we'll send you a link to reset your password.
+            </div>
+            <div>
+              <label className="text-[12px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                Account Email
+              </label>
+              <input
+                type="email"
+                value={resetEmail || loginEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="name@university.edu"
+                required
+                className="w-full bg-slate-50 dark:bg-[#0d1527] border border-slate-200 dark:border-slate-700/80 rounded-xl p-3 text-[14px] text-slate-900 dark:text-white neu-inset outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(false)}
+                className="w-1/2 py-2.5 rounded-xl text-[13px] font-bold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                Back to Sign In
+              </button>
+              <button
+                type="submit"
+                disabled={isResettingPassword}
+                className="neu-btn-primary w-1/2 py-2.5 rounded-xl text-[13px] font-bold cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                {isResettingPassword ? 'Sending...' : 'Send Reset Link'}
+              </button>
+            </div>
+          </form>
+        ) : tab === 'login' ? (
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
               <label className="text-[12px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
@@ -288,9 +356,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 <label className="text-[12px] font-bold text-slate-700 dark:text-slate-300">
                   Password
                 </label>
-                <a href="#forgot" className="text-[12px] font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetEmail(loginEmail);
+                    setShowForgotModal(true);
+                    setErrorMessage('');
+                  }}
+                  className="text-[12px] font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                >
                   Forgot password?
-                </a>
+                </button>
               </div>
               <input
                 type="password"
