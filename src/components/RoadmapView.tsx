@@ -136,8 +136,33 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
         </div>
       )}
 
-      {/* Timeline Container */}
-      <div className="relative pl-6 md:pl-8 before:absolute before:inset-0 before:ml-6 md:before:ml-8 before:-translate-x-px before:w-0.5 before:bg-[#d9e2fc] dark:before:bg-slate-700 before:z-0 space-y-6">
+      {/* Timeline Container or Empty State */}
+      {nodes.length === 0 ? (
+        <div className="bg-white dark:bg-[#1e293b] rounded-3xl p-10 text-center space-y-4 neu-raised border border-slate-200 dark:border-slate-800">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-[#004ac6] dark:text-[#60a5fa] flex items-center justify-center mx-auto">
+            <span className="material-symbols-outlined text-3xl">route</span>
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              No Roadmap Milestones Generated Yet
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+              Generate a personalized step-by-step curriculum with milestones tailored for your target role as <strong className="text-slate-800 dark:text-slate-200">{customRole || user.targetRole}</strong>.
+            </p>
+          </div>
+          <button
+            onClick={handleGenerateCustomRoadmap}
+            disabled={isGenerating}
+            className="neu-btn-primary px-5 py-2.5 rounded-xl text-xs font-bold shadow-md cursor-pointer transition-all inline-flex items-center gap-2 disabled:opacity-50"
+          >
+            <span className={`material-symbols-outlined text-[18px] ${isGenerating ? 'animate-spin' : ''}`}>
+              {isGenerating ? 'refresh' : 'auto_awesome'}
+            </span>
+            {isGenerating ? 'Synthesizing Curriculum...' : 'Generate AI Milestone Roadmap'}
+          </button>
+        </div>
+      ) : (
+        <div className="relative pl-6 md:pl-8 before:absolute before:inset-0 before:ml-6 md:before:ml-8 before:-translate-x-px before:w-0.5 before:bg-[#d9e2fc] dark:before:bg-slate-700 before:z-0 space-y-6">
         {nodes.map((node) => {
           if (node.status === 'completed') {
             return (
@@ -324,6 +349,7 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({
           </div>
         </div>
       </div>
+      )}
 
       {/* Node Details Resource Modal */}
       {activeModalNode && (

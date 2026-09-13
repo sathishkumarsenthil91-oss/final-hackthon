@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CourseItem, ViewType, YouTubeLearningTrack, UserProfile, UnofficialLearningRecord } from '../types';
 import { initialCourses } from '../data/mockData';
+import { supabaseService } from '../services/supabaseService';
 import {
   extractYouTubeVideoId,
   extractYouTubeTimestamp,
@@ -61,6 +62,14 @@ export const CoursesView: React.FC<CoursesViewProps> = ({
 
   // Platform standard courses
   const [courses, setCourses] = useState<CourseItem[]>(initialCourses);
+
+  useEffect(() => {
+    supabaseService.fetchCourses().then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setCourses(data);
+      }
+    });
+  }, []);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCourse, setSelectedCourse] = useState<CourseItem | null>(null);

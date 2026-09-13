@@ -109,128 +109,11 @@ export const initialUserProfile: UserProfile = {
   isPrivateAccount: false,
 };
 
-export const initialSkills: SkillItem[] = [
-  { id: 's1', name: 'HTML5 & Semantic Web', proficiency: 98, category: 'foundation', experience: '3 yrs', verified: true },
-  { id: 's2', name: 'CSS3 & Tailwind CSS', proficiency: 94, category: 'foundation', experience: '2.5 yrs', verified: true },
-  { id: 's3', name: 'JavaScript (ES2024)', proficiency: 86, category: 'foundation', experience: '2 yrs', verified: true },
-  { id: 's4', name: 'Git & GitHub Collaboration', proficiency: 88, category: 'foundation', experience: '2 yrs', verified: true },
-  { id: 's5', name: 'React 19 & Next.js', proficiency: 68, category: 'gap', priority: 'high', experience: '1 yr', verified: true },
-  { id: 's6', name: 'TypeScript & Type Systems', proficiency: 62, category: 'gap', priority: 'high', experience: '1 yr', verified: false },
-  { id: 's7', name: 'Node.js & Express Architecture', proficiency: 54, category: 'gap', priority: 'high', experience: '8 mos', verified: false },
-  { id: 's8', name: 'SQL & PostgreSQL Modeling', proficiency: 58, category: 'gap', priority: 'medium', experience: '1 yr', verified: true },
-  { id: 's9', name: 'Docker & Containerization', proficiency: 32, category: 'upcoming', priority: 'high', experience: '3 mos', verified: false },
-  { id: 's10', name: 'REST APIs & GraphQL', proficiency: 70, category: 'foundation', experience: '1.5 yrs', verified: true },
-  { id: 's11', name: 'CI/CD & Cloud Deployment', proficiency: 28, category: 'upcoming', priority: 'medium', experience: '2 mos', verified: false },
-  { id: 's12', name: 'AI Engineering & Gemini API', proficiency: 65, category: 'gap', priority: 'medium', experience: '6 mos', verified: true },
-];
+export const initialSkills: SkillItem[] = [];
 
-export const initialSkillGapMetrics: SkillGapMetric[] = [
-  {
-    skill: 'Docker & Microservices',
-    currentLevel: 32,
-    requiredLevel: 85,
-    gapPercentage: 53,
-    urgency: 'Critical',
-    suggestedAction: 'Complete Containerization Masterclass and build a multi-container Docker compose app.',
-    estimatedHours: 14,
-  },
-  {
-    skill: 'Node.js Backend & Auth',
-    currentLevel: 54,
-    requiredLevel: 85,
-    gapPercentage: 31,
-    urgency: 'Critical',
-    suggestedAction: 'Finish Node.js REST API with JWT Auth and rate-limiting middleware.',
-    estimatedHours: 18,
-  },
-  {
-    skill: 'TypeScript Strict Mode',
-    currentLevel: 62,
-    requiredLevel: 90,
-    gapPercentage: 28,
-    urgency: 'Moderate',
-    suggestedAction: 'Refactor state stores with generics and discriminated unions.',
-    estimatedHours: 10,
-  },
-  {
-    skill: 'PostgreSQL Complex Joins',
-    currentLevel: 58,
-    requiredLevel: 80,
-    gapPercentage: 22,
-    urgency: 'Moderate',
-    suggestedAction: 'Practice query plans, indexing strategies, and ORM transactions.',
-    estimatedHours: 8,
-  },
-  {
-    skill: 'CI/CD Pipelines (GitHub Actions)',
-    currentLevel: 28,
-    requiredLevel: 75,
-    gapPercentage: 47,
-    urgency: 'Critical',
-    suggestedAction: 'Deploy automated test suites and preview branches with GitHub Actions.',
-    estimatedHours: 12,
-  },
-  {
-    skill: 'React Server Components',
-    currentLevel: 68,
-    requiredLevel: 85,
-    gapPercentage: 17,
-    urgency: 'Good',
-    suggestedAction: 'Build a dynamic dashboard utilizing streaming SSR and Suspense.',
-    estimatedHours: 6,
-  },
-];
+export const initialSkillGapMetrics: SkillGapMetric[] = [];
 
-export const initialAIRecommendations: AIRecommendation[] = [
-  {
-    id: 'rec-1',
-    category: 'Skill Sprint',
-    title: 'Bridge Docker & Containerization Gap',
-    description: 'High-yield 5-day sprint: Learn multi-stage builds, docker-compose orchestration, and deployment to Google Cloud Run.',
-    impactScore: 96,
-    estimatedTime: '8 hours',
-    tags: ['Docker', 'Cloud Run', 'High ROI'],
-    actionLabel: 'Launch Skill Sprint',
-    actionView: 'courses',
-    difficulty: 'Intermediate',
-  },
-  {
-    id: 'rec-2',
-    category: 'Internship Strategy',
-    title: 'Apply to Google SWE Summer Intern (94% Match)',
-    description: 'Your profile satisfies 94% of criteria. Tailor your resume highlights to emphasize React 19, TypeScript, and Data Structures.',
-    impactScore: 94,
-    estimatedTime: '25 mins',
-    tags: ['Google', '94% Match', 'Top Tier'],
-    actionLabel: 'View & Apply Now',
-    actionView: 'opportunities',
-    difficulty: 'Advanced',
-  },
-  {
-    id: 'rec-3',
-    category: 'Project',
-    title: 'Build Full-Stack AI Chatbot with Gemini 3.1',
-    description: 'Combine React, TypeScript, Express, and Google GenAI SDK. Boosts resume score for Full Stack and AI Engineering roles.',
-    impactScore: 91,
-    estimatedTime: '12 hours',
-    tags: ['Full Stack', 'Gemini API', 'Portfolio Star'],
-    actionLabel: 'Open Project Guide',
-    actionView: 'assignments',
-    difficulty: 'Intermediate',
-  },
-  {
-    id: 'rec-4',
-    category: 'Certification',
-    title: 'Google Cloud Associate Cloud Engineer Prep',
-    description: 'Earn an industry-standard credential. Nit-certified 30% student voucher discount currently available.',
-    impactScore: 89,
-    estimatedTime: '3 weeks',
-    tags: ['Cloud', 'GCP', 'Voucher Available'],
-    actionLabel: 'Review Exam Roadmap',
-    actionView: 'certifications',
-    difficulty: 'Intermediate',
-  },
-];
+export const initialAIRecommendations: AIRecommendation[] = [];
 
 export const initialCourses: CourseItem[] = [
   {
@@ -989,61 +872,7 @@ export const initialAppSettings: AppSettings = {
   profileVisibility: 'Public',
 };
 
-export const initialRoadmapNodes: RoadmapNode[] = [
-  {
-    id: 'r1',
-    title: 'HTML5 & Modern Semantic Web',
-    status: 'current',
-    progress: 0,
-    description: 'Semantic markup, modern CSS grid, flexbox, and responsive UI foundations.',
-    subtopics: ['Semantic Tags', 'Flexbox & CSS Grid', 'Mobile-First Media Queries'],
-  },
-  {
-    id: 'r2',
-    title: 'Modern JavaScript (ES2024)',
-    status: 'upcoming',
-    progress: 0,
-    description: 'ES6+ modern syntax, asynchronous programming, DOM APIs, and closures.',
-    subtopics: ['Promises & Async/Await', 'Event Loop & Closures', 'Fetch & REST APIs'],
-  },
-  {
-    id: 'r3',
-    title: 'React 19 & State Architecture',
-    status: 'upcoming',
-    progress: 0,
-    description: 'Focusing on Hooks, Context API, component lifecycle, and modern State Management.',
-    subtopics: ['useState & useEffect', 'Custom Hooks', 'Context API & Redux Toolkit', 'Component Performance'],
-    recommendedResources: [
-      { title: 'Advanced React Patterns (Interactive Course)', type: 'Course' },
-      { title: 'React 19 Hooks in Depth (Official Docs)', type: 'Docs' },
-      { title: 'Full Stack React Project Workshop', type: 'Lab' },
-    ],
-  },
-  {
-    id: 'r4',
-    title: 'Node.js & Scalable Express APIs',
-    status: 'upcoming',
-    progress: 0,
-    description: 'REST API design with Express, JWT authentication, rate limiting, and middleware pipelines.',
-    subtopics: ['Express.js Server Architecture', 'JWT Authentication', 'Error Handling Middleware'],
-  },
-  {
-    id: 'r5',
-    title: 'SQL & Relational Databases (PostgreSQL)',
-    status: 'upcoming',
-    progress: 0,
-    description: 'Relational data modeling, ACID transactions, complex joins, and query optimization.',
-    subtopics: ['PostgreSQL Schema Design', 'Foreign Keys & Indexing', 'Drizzle / Prisma ORM'],
-  },
-  {
-    id: 'r6',
-    title: 'Docker, Containers & Cloud Deployment',
-    status: 'upcoming',
-    progress: 0,
-    description: 'Multi-stage container builds, docker-compose orchestration, and CI/CD pipelines to Cloud Run.',
-    subtopics: ['Dockerfile Optimization', 'Docker Compose Multi-Tier', 'GitHub Actions CI/CD'],
-  },
-];
+export const initialRoadmapNodes: RoadmapNode[] = [];
 
 export const initialOpportunities: OpportunityItem[] = [
   {

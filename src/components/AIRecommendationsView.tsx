@@ -117,8 +117,33 @@ export const AIRecommendationsView: React.FC<AIRecommendationsViewProps> = ({
         ))}
       </div>
 
-      {/* Recommendations List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Recommendations List or Empty State */}
+      {filtered.length === 0 ? (
+        <div className="bg-white dark:bg-[#151f38] border border-slate-200 dark:border-slate-800 rounded-3xl p-10 text-center space-y-4 shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
+            <span className="material-symbols-outlined text-3xl">auto_awesome</span>
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              No Growth Recommendations Yet
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+              Generate personalized career growth actions, project ideas, and interview strategies for your target role as <strong className="text-slate-800 dark:text-slate-200">{user.targetRole}</strong>.
+            </p>
+          </div>
+          <button
+            onClick={handleRefreshRecommendations}
+            disabled={isRefreshing}
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all inline-flex items-center gap-2 disabled:opacity-50"
+          >
+            <span className={`material-symbols-outlined text-[18px] ${isRefreshing ? 'animate-spin' : ''}`}>
+              {isRefreshing ? 'refresh' : 'auto_fix_high'}
+            </span>
+            {isRefreshing ? 'Generating Vector...' : 'Generate AI Recommendations'}
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filtered.map((rec) => (
           <div
             key={rec.id}
@@ -172,6 +197,7 @@ export const AIRecommendationsView: React.FC<AIRecommendationsViewProps> = ({
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 };

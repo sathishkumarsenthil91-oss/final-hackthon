@@ -8,15 +8,8 @@ import { createServer as createViteServer } from 'vite';
 
 dotenv.config();
 
-const getDirname = () => {
-  if (typeof __dirname !== 'undefined') return __dirname;
-  try {
-    return path.dirname(fileURLToPath(import.meta.url));
-  } catch {
-    return process.cwd();
-  }
-};
-const appDir = getDirname();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3000;
@@ -25,14 +18,14 @@ app.use(express.json({ limit: '10mb' }));
 
 // Lazy initialization of GoogleGenAI client with required header
 let aiClient: GoogleGenAI | null = null;
-function getAIClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return null;
-  }
+function getAIClient(): GoogleGenAI {
   if (!aiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.warn('GEMINI_API_KEY is not set in environment.');
+    }
     aiClient = new GoogleGenAI({
-      apiKey,
+      apiKey: apiKey || '',
       httpOptions: {
         headers: {
           'User-Agent': 'aistudio-build',
@@ -186,18 +179,28 @@ ${typeof learningTracksContext === 'string' ? learningTracksContext : JSON.strin
 ${modeContext}
 ${languageInstruction}
 
-User Profile Context:
-${userProfile ? JSON.stringify(userProfile, null, 2) : 'Student targeting Full Stack Developer, 72% Readiness.'}
+User Profile Context (Ground Truth - do not invent or fabricate outside this context):
+${userProfile ? JSON.stringify({
+  name: userProfile.name || 'Student Developer',
+  targetRole: userProfile.targetRole || 'Full Stack Engineer',
+  college: userProfile.college || 'Unspecified',
+  degree: userProfile.degree || 'Unspecified',
+  overallReadiness: userProfile.overallReadiness,
+  skills: userProfile.skills,
+}, null, 2) : 'Student targeting Full Stack Developer.'}
 ${learningContextPrompt}
 
-Guidelines:
+CRITICAL ANTI-HALLUCINATION & FACTUAL GROUNDING DIRECTIVES:
+- Ground all responses strictly on verified computer science industry standards (React 19, TypeScript, modern REST/GraphQL, PostgreSQL).
+- NEVER invent, assume, or hallucinate user information (such as non-existent degrees, fake universities, unverified GPAs, or fabricated job history).
+- If referring to the user, use ONLY their verified profile attributes. Never invent credentials.
 - Provide clear, actionable, structured career and technical advice.
-- When explaining code or architectural concepts, use clean markdown and modern industry best practices (React 19, TypeScript, modern REST/Node.js, PostgreSQL).
+- When explaining code or architectural concepts, use clean markdown with high readability and syntax-highlighted code blocks.
 - Be encouraging, precise, and practical. Keep answers direct and well formatted with bullet points and bold key terms.`;
 
   const config: any = {
     systemInstruction,
-    temperature: 0.7,
+    temperature: 0.6,
   };
 
   if (thinkingMode) {
@@ -221,36 +224,34 @@ Guidelines:
   });
 
   let reply = '';
-  let usedModel = thinkingMode ? 'gemini-3.1-pro-preview' : 'gemini-3.7-flash';
+  let usedModel = thinkingMode ? 'gemini-3.7-flash' : 'gemini-3.7-flash';
 
-  // Tier 1: Try Gemini
+  // Tier 1: Try Gemini (Official high-speed Gemini 3 series models)
   try {
     const ai = getAIClient();
-    if (ai) {
-      const candidateModels = thinkingMode
-        ? ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.1-flash-lite']
-        : ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+    const candidateModels = thinkingMode
+      ? ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview']
+      : ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
 
-      let geminiSuccess = false;
-      for (const candidate of candidateModels) {
-        try {
-          const response = await ai.models.generateContent({
-            model: candidate,
-            contents,
-            config,
-          });
-          if (response.text) {
-            reply = response.text;
-            usedModel = candidate;
-            geminiSuccess = true;
-            break;
-          }
-        } catch (err: any) {
-          console.warn(`Gemini candidate ${candidate} unavailable (${err?.status || err?.message || 'error'}), checking next candidate...`);
+    let geminiSuccess = false;
+    for (const candidate of candidateModels) {
+      try {
+        const response = await ai.models.generateContent({
+          model: candidate,
+          contents,
+          config,
+        });
+        if (response.text) {
+          reply = response.text;
+          usedModel = candidate;
+          geminiSuccess = true;
+          break;
         }
+      } catch (err: any) {
+        console.warn(`Gemini candidate ${candidate} unavailable (${err?.status || err?.message || 'error'}), checking next candidate...`);
       }
-      if (!geminiSuccess) throw new Error('All Gemini candidate models unavailable');
     }
+    if (!geminiSuccess) throw new Error('All Gemini candidate models unavailable');
   } catch (geminiErr) {
     // Tier 2: Try OpenAI
     const openai = getOpenAIClient();
@@ -302,9 +303,10 @@ app.post('/api/ai/chat/stream', async (req, res) => {
   }
 
   // Set headers for Server-Sent Events (SSE)
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders?.();
 
   let modeContext = '';
@@ -331,18 +333,28 @@ ${typeof learningTracksContext === 'string' ? learningTracksContext : JSON.strin
 ${modeContext}
 ${languageInstruction}
 
-User Profile Context:
-${userProfile ? JSON.stringify(userProfile, null, 2) : 'Student targeting Full Stack Developer, 72% Readiness.'}
+User Profile Context (Ground Truth - do not invent or fabricate outside this context):
+${userProfile ? JSON.stringify({
+  name: userProfile.name || 'Student Developer',
+  targetRole: userProfile.targetRole || 'Full Stack Engineer',
+  college: userProfile.college || 'Unspecified',
+  degree: userProfile.degree || 'Unspecified',
+  overallReadiness: userProfile.overallReadiness,
+  skills: userProfile.skills,
+}, null, 2) : 'Student targeting Full Stack Developer.'}
 ${learningContextPrompt}
 
-Guidelines:
+CRITICAL ANTI-HALLUCINATION & FACTUAL GROUNDING DIRECTIVES:
+- Ground all responses strictly on verified computer science industry standards (React 19, TypeScript, modern REST/GraphQL, PostgreSQL).
+- NEVER invent, assume, or hallucinate user information (such as non-existent degrees, fake universities, unverified GPAs, or fabricated job history).
+- If referring to the user, use ONLY their verified profile attributes. Never invent credentials.
 - Provide clear, actionable, structured career and technical advice.
-- When explaining code or architectural concepts, use clean markdown and modern industry best practices (React 19, TypeScript, modern REST/Node.js, PostgreSQL).
+- When explaining code or architectural concepts, use clean markdown with high readability and syntax-highlighted code blocks.
 - Be encouraging, precise, and practical. Keep answers direct and well formatted with bullet points and bold key terms.`;
 
   const config: any = {
     systemInstruction,
-    temperature: 0.7,
+    temperature: 0.6,
   };
 
   if (thinkingMode) {
@@ -367,36 +379,36 @@ Guidelines:
 
   let streamCompleted = false;
 
-  // Tier 1: Try Gemini Streaming with fallback models
+  // Tier 1: Try Gemini Streaming with high-speed official models
   try {
     const ai = getAIClient();
-    if (ai) {
-      const candidateModels = thinkingMode
-        ? ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.1-flash-lite']
-        : ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+    const candidateModels = thinkingMode
+      ? ['gemini-2.5-pro', 'gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview']
+      : ['gemini-2.5-flash', 'gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
 
-      for (const candidate of candidateModels) {
-        try {
-          const streamResponse = await ai.models.generateContentStream({
-            model: candidate,
-            contents,
-            config,
-          });
+    for (const candidate of candidateModels) {
+      try {
+        const streamResponse = await ai.models.generateContentStream({
+          model: candidate,
+          contents,
+          config,
+        });
 
-          for await (const chunk of streamResponse) {
-            const chunkText = chunk.text;
-            if (chunkText) {
-              res.write(`data: ${JSON.stringify({ chunk: chunkText })}\n\n`);
-            }
+        for await (const chunk of streamResponse) {
+          const chunkText = chunk.text;
+          if (chunkText) {
+            res.write(`data: ${JSON.stringify({ chunk: chunkText })}\n\n`);
+            (res as any).flush?.();
           }
-
-          res.write(`data: ${JSON.stringify({ done: true, modelUsed: candidate })}\n\n`);
-          res.end();
-          streamCompleted = true;
-          break;
-        } catch (candidateErr: any) {
-          console.warn(`Gemini candidate ${candidate} stream unavailable (${candidateErr?.status || candidateErr?.message || 'error'}), checking next candidate...`);
         }
+
+        res.write(`data: ${JSON.stringify({ done: true, modelUsed: candidate })}\n\n`);
+        (res as any).flush?.();
+        res.end();
+        streamCompleted = true;
+        break;
+      } catch (candidateErr: any) {
+        console.warn(`Gemini candidate ${candidate} stream unavailable (${candidateErr?.status || candidateErr?.message || 'error'}), checking next candidate...`);
       }
     }
   } catch (allGeminiErr) {
@@ -431,10 +443,12 @@ Guidelines:
         const delta = chunk.choices[0]?.delta?.content || '';
         if (delta) {
           res.write(`data: ${JSON.stringify({ chunk: delta })}\n\n`);
+          (res as any).flush?.();
         }
       }
 
       res.write(`data: ${JSON.stringify({ done: true, modelUsed: 'gpt-4o-mini (OpenAI)' })}\n\n`);
+      (res as any).flush?.();
       res.end();
       streamCompleted = true;
     } catch (oaiErr: any) {
@@ -625,23 +639,21 @@ Generate structured JSON containing:
     const candidateModels = ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
     let geminiSuccess = false;
 
-    if (ai) {
-      for (const candidate of candidateModels) {
-        try {
-          const response = await ai.models.generateContent({
-            model: candidate,
-            contents: prompt,
-            config,
-          });
-          if (response.text) {
-            parsedSummary = JSON.parse(response.text);
-            usedModel = candidate;
-            geminiSuccess = true;
-            break;
-          }
-        } catch (candidateErr: any) {
-          console.warn(`Gemini summarize candidate ${candidate} failed (${candidateErr?.status || candidateErr?.message || 'error'}), trying next...`);
+    for (const candidate of candidateModels) {
+      try {
+        const response = await ai.models.generateContent({
+          model: candidate,
+          contents: prompt,
+          config,
+        });
+        if (response.text) {
+          parsedSummary = JSON.parse(response.text);
+          usedModel = candidate;
+          geminiSuccess = true;
+          break;
         }
+      } catch (candidateErr: any) {
+        console.warn(`Gemini summarize candidate ${candidate} failed (${candidateErr?.status || candidateErr?.message || 'error'}), trying next...`);
       }
     }
 
@@ -865,74 +877,72 @@ Return a valid JSON object matching the exact schema.`;
     let geminiSuccess = false;
     const ai = getAIClient();
 
-    if (ai) {
-      for (const candidate of candidateModels) {
-        try {
-          const config: any = {
-            systemInstruction: 'You are an advanced cybersecurity and employment fraud detection AI. Evaluate job opportunities with extreme precision.',
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                riskScore: {
-                  type: Type.INTEGER,
-                  description: 'Risk score from 0 (completely safe/verified) to 100 (extreme scam/fraud danger).',
-                },
-                riskLevel: {
-                  type: Type.STRING,
-                  description: 'One of: "HIGH RISK", "MODERATE RISK", "LOW RISK", "VERIFIED SAFE".',
-                },
-                summary: {
-                  type: Type.STRING,
-                  description: '1-2 sentence overall risk verdict.',
-                },
-                detectedSignals: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      title: { type: Type.STRING },
-                      description: { type: Type.STRING },
-                      severity: { type: Type.STRING, description: '"high", "medium", or "low"' },
-                      icon: { type: Type.STRING, description: 'Icon name like warning, gpp_maybe, help, money_off, link_off' },
-                    },
-                    required: ['title', 'description', 'severity', 'icon'],
+    for (const candidate of candidateModels) {
+      try {
+        const config: any = {
+          systemInstruction: 'You are an advanced cybersecurity and employment fraud detection AI. Evaluate job opportunities with extreme precision.',
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              riskScore: {
+                type: Type.INTEGER,
+                description: 'Risk score from 0 (completely safe/verified) to 100 (extreme scam/fraud danger).',
+              },
+              riskLevel: {
+                type: Type.STRING,
+                description: 'One of: "HIGH RISK", "MODERATE RISK", "LOW RISK", "VERIFIED SAFE".',
+              },
+              summary: {
+                type: Type.STRING,
+                description: '1-2 sentence overall risk verdict.',
+              },
+              detectedSignals: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    title: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    severity: { type: Type.STRING, description: '"high", "medium", or "low"' },
+                    icon: { type: Type.STRING, description: 'Icon name like warning, gpp_maybe, help, money_off, link_off' },
                   },
-                },
-                recommendation: {
-                  type: Type.STRING,
-                  description: 'Direct security and verification recommendation for the student.',
-                },
-                verificationChecklist: {
-                  type: Type.ARRAY,
-                  items: { type: Type.STRING },
-                  description: '3-4 actionable verification steps.',
+                  required: ['title', 'description', 'severity', 'icon'],
                 },
               },
-              required: ['riskScore', 'riskLevel', 'summary', 'detectedSignals', 'recommendation', 'verificationChecklist'],
+              recommendation: {
+                type: Type.STRING,
+                description: 'Direct security and verification recommendation for the student.',
+              },
+              verificationChecklist: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: '3-4 actionable verification steps.',
+              },
             },
+            required: ['riskScore', 'riskLevel', 'summary', 'detectedSignals', 'recommendation', 'verificationChecklist'],
+          },
+        };
+
+        if (useHighThinking && candidate === 'gemini-3.1-pro-preview') {
+          config.thinkingConfig = {
+            thinkingLevel: ThinkingLevel.HIGH,
           };
-
-          if (useHighThinking && candidate === 'gemini-3.1-pro-preview') {
-            config.thinkingConfig = {
-              thinkingLevel: ThinkingLevel.HIGH,
-            };
-          }
-
-          const response = await ai.models.generateContent({
-            model: candidate,
-            contents: prompt,
-            config,
-          });
-
-          const jsonText = response.text?.trim() || '{}';
-          parsedData = JSON.parse(jsonText);
-          usedModel = candidate;
-          geminiSuccess = true;
-          break;
-        } catch (geminiCandidateErr: any) {
-          console.warn(`Gemini scan opportunity candidate ${candidate} failed:`, geminiCandidateErr?.status || geminiCandidateErr?.message);
         }
+
+        const response = await ai.models.generateContent({
+          model: candidate,
+          contents: prompt,
+          config,
+        });
+
+        const jsonText = response.text?.trim() || '{}';
+        parsedData = JSON.parse(jsonText);
+        usedModel = candidate;
+        geminiSuccess = true;
+        break;
+      } catch (geminiCandidateErr: any) {
+        console.warn(`Gemini scan opportunity candidate ${candidate} failed:`, geminiCandidateErr?.status || geminiCandidateErr?.message);
       }
     }
 
@@ -1021,25 +1031,23 @@ app.post('/api/ai/extract-skills', async (req, res) => {
     if (!skills || skills.length === 0) {
       const candidateSkillModels = ['gemini-3.1-flash-lite', 'gemini-3.7-flash', 'gemini-flash-latest'];
       const ai = getAIClient();
-      if (ai) {
-        for (const candidate of candidateSkillModels) {
-          try {
-            const response = await ai.models.generateContent({
-              model: candidate,
-              contents: `Suggest 6 in-demand skills or related sub-topics for a "${role}" role matching user query: "${query || ''}". Return JSON array of strings only.`,
-              config: {
-                responseMimeType: 'application/json',
-                responseSchema: {
-                  type: Type.ARRAY,
-                  items: { type: Type.STRING },
-                },
+      for (const candidate of candidateSkillModels) {
+        try {
+          const response = await ai.models.generateContent({
+            model: candidate,
+            contents: `Suggest 6 in-demand skills or related sub-topics for a "${role}" role matching user query: "${query || ''}". Return JSON array of strings only.`,
+            config: {
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
               },
-            });
-            skills = JSON.parse(response.text || '[]');
-            if (Array.isArray(skills) && skills.length > 0) break;
-          } catch (candidateErr: any) {
-            console.warn(`Gemini extract-skills model ${candidate} failed:`, candidateErr?.status || candidateErr?.message);
-          }
+            },
+          });
+          skills = JSON.parse(response.text || '[]');
+          if (Array.isArray(skills) && skills.length > 0) break;
+        } catch (candidateErr: any) {
+          console.warn(`Gemini extract-skills model ${candidate} failed:`, candidateErr?.status || candidateErr?.message);
         }
       }
     }
@@ -1097,73 +1105,71 @@ Produce a detailed learning pathway containing:
 5. 3 recommended high-value projects and practice resources.`;
 
     let roadmapData: any = null;
-    const candidateRoadmapModels = ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+    const candidateRoadmapModels = ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.1-flash-lite'];
     let geminiSuccess = false;
     const ai = getAIClient();
 
-    if (ai) {
-      for (const candidate of candidateRoadmapModels) {
-        try {
-          const config: any = {
-            systemInstruction: 'You are an elite Silicon Valley technical career architect.',
-            responseMimeType: 'application/json',
-            thinkingConfig: candidate === 'gemini-3.1-pro-preview' ? {
-              thinkingLevel: ThinkingLevel.HIGH,
-            } : undefined,
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                targetRole: { type: Type.STRING },
-                readinessScore: { type: Type.INTEGER },
-                estimatedTimelineMonths: { type: Type.INTEGER },
-                nodes: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      id: { type: Type.STRING },
-                      title: { type: Type.STRING },
-                      status: { type: Type.STRING, description: '"completed", "current", or "upcoming"' },
-                      progress: { type: Type.INTEGER },
-                      description: { type: Type.STRING },
-                      subtopics: { type: Type.ARRAY, items: { type: Type.STRING } },
-                      recommendedResources: {
-                        type: Type.ARRAY,
-                        items: {
-                          type: Type.OBJECT,
-                          properties: {
-                            title: { type: Type.STRING },
-                            type: { type: Type.STRING },
-                            link: { type: Type.STRING },
-                          },
-                          required: ['title', 'type'],
+    for (const candidate of candidateRoadmapModels) {
+      try {
+        const config: any = {
+          systemInstruction: 'You are an elite Silicon Valley technical career architect.',
+          responseMimeType: 'application/json',
+          thinkingConfig: candidate === 'gemini-3.1-pro-preview' ? {
+            thinkingLevel: ThinkingLevel.HIGH,
+          } : undefined,
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              targetRole: { type: Type.STRING },
+              readinessScore: { type: Type.INTEGER },
+              estimatedTimelineMonths: { type: Type.INTEGER },
+              nodes: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    id: { type: Type.STRING },
+                    title: { type: Type.STRING },
+                    status: { type: Type.STRING, description: '"completed", "current", or "upcoming"' },
+                    progress: { type: Type.INTEGER },
+                    description: { type: Type.STRING },
+                    subtopics: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    recommendedResources: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          title: { type: Type.STRING },
+                          type: { type: Type.STRING },
+                          link: { type: Type.STRING },
                         },
+                        required: ['title', 'type'],
                       },
                     },
-                    required: ['id', 'title', 'status', 'progress', 'description'],
                   },
-                },
-                aiInsight: {
-                  type: Type.STRING,
-                  description: 'High-level strategic takeaway from Nebula AI.',
+                  required: ['id', 'title', 'status', 'progress', 'description'],
                 },
               },
-              required: ['targetRole', 'readinessScore', 'estimatedTimelineMonths', 'nodes', 'aiInsight'],
+              aiInsight: {
+                type: Type.STRING,
+                description: 'High-level strategic takeaway from Nebula AI.',
+              },
             },
-          };
+            required: ['targetRole', 'readinessScore', 'estimatedTimelineMonths', 'nodes', 'aiInsight'],
+          },
+        };
 
-          const response = await ai.models.generateContent({
-            model: candidate,
-            contents: prompt,
-            config,
-          });
+        const response = await ai.models.generateContent({
+          model: candidate,
+          contents: prompt,
+          config,
+        });
 
-          roadmapData = JSON.parse(response.text || '{}');
-          geminiSuccess = true;
-          break;
-        } catch (candidateErr: any) {
-          console.warn(`Gemini roadmap model ${candidate} failed:`, candidateErr?.status || candidateErr?.message);
-        }
+        roadmapData = JSON.parse(response.text || '{}');
+        geminiSuccess = true;
+        break;
+      } catch (candidateErr: any) {
+        console.warn(`Gemini roadmap model ${candidate} failed:`, candidateErr?.status || candidateErr?.message);
       }
     }
 
@@ -1256,10 +1262,7 @@ Produce a detailed learning pathway containing:
   }
 });
 
-// Explicit 404 for unhandled API routes so frontend fetch doesn't receive HTML SPA fallback
-app.use('/api', (req, res) => {
-  res.status(404).json({ error: `API endpoint ${req.method} ${req.originalUrl} not found` });
-});
+// End of AI & Learning API routes
 
 // Vite middleware for development & static serving for production
 async function startServer() {
@@ -1270,7 +1273,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(appDir, 'dist');
+    const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));

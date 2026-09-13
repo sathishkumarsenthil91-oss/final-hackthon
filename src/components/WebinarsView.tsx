@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WebinarItem, ViewType, UserProfile, WebinarCertificate, GeneratedCertificate } from '../types';
 import { initialWebinars } from '../data/mockData';
+import { supabaseService } from '../services/supabaseService';
 import { WebinarCertificateModal } from './WebinarCertificateModal';
 import { CertificateGenerationModal } from './CertificateGenerationModal';
 import { extractYouTubeVideoId } from '../services/youtubeLearningService';
@@ -28,6 +29,14 @@ export const WebinarsView: React.FC<WebinarsViewProps> = ({
     }
     return initialWebinars;
   });
+
+  useEffect(() => {
+    supabaseService.fetchWebinars().then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setWebinars(data);
+      }
+    });
+  }, []);
   const [filterType, setFilterType] = useState<'All' | 'Upcoming' | 'Live' | 'Recorded'>('All');
   const [selectedWebinar, setSelectedWebinar] = useState<WebinarItem | null>(null);
   const [activePlayerWebinar, setActivePlayerWebinar] = useState<WebinarItem | null>(null);

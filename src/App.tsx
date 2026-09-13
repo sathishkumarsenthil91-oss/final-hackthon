@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { ViewType, UserProfile, SkillItem, RoadmapNode } from './types';
 import { initialUserProfile, initialSkills, initialRoadmapNodes } from './data/mockData';
 import { Header } from './components/Header';
@@ -6,26 +6,37 @@ import { BottomNav } from './components/BottomNav';
 import { AuthView } from './components/AuthView';
 import { LandingHero } from './components/LandingHero';
 import { DashboardView } from './components/DashboardView';
-import { ProfileView } from './components/ProfileView';
-import { SkillsView } from './components/SkillsView';
-import { SkillGapView } from './components/SkillGapView';
-import { AIRecommendationsView } from './components/AIRecommendationsView';
-import { CoursesView } from './components/CoursesView';
-import { IndustryToolsView } from './components/IndustryToolsView';
-import { CertificationsView } from './components/CertificationsView';
-import { OpportunitiesView } from './components/OpportunitiesView';
-import { WebinarsView } from './components/WebinarsView';
-import { NebulaAIChat } from './components/NebulaAIChat';
-import { AssignmentsView } from './components/AssignmentsView';
-import { SafetyCenterView } from './components/SafetyCenterView';
-import { SettingsView } from './components/SettingsView';
-import { RoadmapView } from './components/RoadmapView';
-import { NetworkView } from './components/NetworkView';
-import { ConnectivitySubsection } from './components/ConnectivitySubsection';
-import { OnboardingWizard } from './components/OnboardingWizard';
-import { LoginModal } from './components/LoginModal';
-import { SmartCopilotDrawer } from './components/SmartCopilotDrawer';
 import { supabase } from './supabaseClient';
+import { supabaseService } from './services/supabaseService';
+
+// Lazy load secondary views for instant initial paint and minimal bundle footprint
+const ProfileView = lazy(() => import('./components/ProfileView').then((m) => ({ default: m.ProfileView })));
+const SkillsView = lazy(() => import('./components/SkillsView').then((m) => ({ default: m.SkillsView })));
+const SkillGapView = lazy(() => import('./components/SkillGapView').then((m) => ({ default: m.SkillGapView })));
+const AIRecommendationsView = lazy(() => import('./components/AIRecommendationsView').then((m) => ({ default: m.AIRecommendationsView })));
+const CoursesView = lazy(() => import('./components/CoursesView').then((m) => ({ default: m.CoursesView })));
+const IndustryToolsView = lazy(() => import('./components/IndustryToolsView').then((m) => ({ default: m.IndustryToolsView })));
+const CertificationsView = lazy(() => import('./components/CertificationsView').then((m) => ({ default: m.CertificationsView })));
+const OpportunitiesView = lazy(() => import('./components/OpportunitiesView').then((m) => ({ default: m.OpportunitiesView })));
+const ConnectivitySubsection = lazy(() => import('./components/ConnectivitySubsection').then((m) => ({ default: m.ConnectivitySubsection })));
+const WebinarsView = lazy(() => import('./components/WebinarsView').then((m) => ({ default: m.WebinarsView })));
+const NebulaAIChat = lazy(() => import('./components/NebulaAIChat').then((m) => ({ default: m.NebulaAIChat })));
+const AssignmentsView = lazy(() => import('./components/AssignmentsView').then((m) => ({ default: m.AssignmentsView })));
+const SafetyCenterView = lazy(() => import('./components/SafetyCenterView').then((m) => ({ default: m.SafetyCenterView })));
+const SettingsView = lazy(() => import('./components/SettingsView').then((m) => ({ default: m.SettingsView })));
+const RoadmapView = lazy(() => import('./components/RoadmapView').then((m) => ({ default: m.RoadmapView })));
+const OnboardingWizard = lazy(() => import('./components/OnboardingWizard').then((m) => ({ default: m.OnboardingWizard })));
+const SmartCopilotDrawer = lazy(() => import('./components/SmartCopilotDrawer').then((m) => ({ default: m.SmartCopilotDrawer })));
+const LoginModal = lazy(() => import('./components/LoginModal').then((m) => ({ default: m.LoginModal })));
+
+function ViewLoadingFallback() {
+  return (
+    <div className="pt-28 pb-24 max-w-7xl mx-auto px-4 flex flex-col items-center justify-center min-h-[350px]">
+      <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <p className="mt-3 text-xs font-medium text-slate-400">Loading module...</p>
+    </div>
+  );
+}
 
 export default function App() {
   // Check for existing saved session
@@ -71,56 +82,36 @@ export default function App() {
     }
   }, [isDarkMode]);
 
+  // Load real user skills & roadmap whenever user profile changes
+  useEffect(() => {
+    if (user && user.email) {
+      supabaseService.getUserSkills(user).then((loadedSkills) => {
+        if (Array.isArray(loadedSkills) && loadedSkills.length > 0) {
+          setSkills(loadedSkills);
+        }
+      });
+      supabaseService.getUserRoadmap(user).then((loadedNodes) => {
+        if (Array.isArray(loadedNodes) && loadedNodes.length > 0) {
+          setRoadmapNodes(loadedNodes);
+        }
+      });
+    }
+  }, [user.email, user.targetRole]);
+
   // Sync Supabase Auth session (handles Google OAuth callback redirects and persisted sessions)
   useEffect(() => {
-    const syncUserSession = async (sessionUser: any) => {
-      if (!sessionUser) return;
-      const email = sessionUser.email || '';
-      const meta = sessionUser.user_metadata || {};
-      const fallbackName = meta.full_name || meta.name || email.split('@')[0] || 'Verified Student';
-
-      // 1. Fetch persistent profile from Supabase profiles table
-      let dbProfile: any = null;
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .or(`id.eq.${sessionUser.id},email.eq.${email.toLowerCase()}`)
-          .maybeSingle();
-        if (!error && data) {
-          dbProfile = data;
-        }
-      } catch (err) {
-        console.warn('Notice fetching profile from Supabase:', err);
-      }
-
-      const additionalData: Partial<UserProfile> = {
-        avatarUrl: dbProfile?.avatar_url || meta.avatar_url || meta.picture,
-        college: dbProfile?.college || meta.college,
-        targetRole: dbProfile?.target_role || meta.target_role,
-        headline: dbProfile?.headline,
-        bio: dbProfile?.bio,
-        phone: dbProfile?.phone,
-        degree: dbProfile?.degree,
-        gradYear: dbProfile?.grad_year,
-        gpa: dbProfile?.gpa,
-        location: dbProfile?.location,
-        githubUrl: dbProfile?.github_url,
-        linkedinUrl: dbProfile?.linkedin_url,
-        portfolioUrl: dbProfile?.portfolio_url,
-        overallReadiness: dbProfile?.overall_readiness,
-        isPrivateAccount: dbProfile?.is_private_account,
-      };
-
-      handleLoginSuccess(dbProfile?.name || fallbackName, email, additionalData);
-      setIsAuthOpen(false);
-      setCurrentView((prev) => (prev === 'auth' || prev === 'login' || prev === 'register' ? 'dashboard' : prev));
-    };
-
     // Check initial active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        syncUserSession(session.user);
+        const email = session.user.email || '';
+        const meta = session.user.user_metadata || {};
+        const name = meta.full_name || meta.name || email.split('@')[0] || 'Verified Student';
+        handleLoginSuccess(name, email, {
+          avatarUrl: meta.avatar_url || meta.picture,
+          college: meta.college,
+          targetRole: meta.target_role,
+        });
+        setCurrentView((prev) => (prev === 'auth' || prev === 'login' || prev === 'register' ? 'dashboard' : prev));
       }
     });
 
@@ -129,7 +120,15 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user) {
-        syncUserSession(session.user);
+        const email = session.user.email || '';
+        const meta = session.user.user_metadata || {};
+        const name = meta.full_name || meta.name || email.split('@')[0] || 'Verified Student';
+        handleLoginSuccess(name, email, {
+          avatarUrl: meta.avatar_url || meta.picture,
+          college: meta.college,
+          targetRole: meta.target_role,
+        });
+        setCurrentView((prev) => (prev === 'auth' || prev === 'login' || prev === 'register' ? 'dashboard' : prev));
       }
     });
 
@@ -138,21 +137,21 @@ export default function App() {
     };
   }, []);
 
-  const handleToggleTheme = () => {
+  const handleToggleTheme = useCallback(() => {
     setIsDarkMode((prev) => !prev);
-  };
+  }, []);
 
-  const handleNavigate = (view: ViewType) => {
+  const handleNavigate = useCallback((view: ViewType) => {
     setCurrentView(view);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
-  const handleScanOpportunityInSafetyCenter = (url: string, content: string) => {
+  const handleScanOpportunityInSafetyCenter = useCallback((url: string, content: string) => {
     setSafetyInitialData({ url, content });
     setCurrentView('safety');
-  };
+  }, []);
 
-  const handleUpdateProfile = (updated: Partial<UserProfile>) => {
+  const handleUpdateProfile = useCallback((updated: Partial<UserProfile>) => {
     setUser((prev) => {
       const nextUser = { ...prev, ...updated };
       try {
@@ -163,42 +162,23 @@ export default function App() {
       } catch (err) {
         console.error(err);
       }
-
-      // Asynchronously sync updates to Supabase profiles table
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user?.id) {
-          supabase
-            .from('profiles')
-            .upsert({
-              id: session.user.id,
-              email: nextUser.email,
-              name: nextUser.name,
-              avatar_url: nextUser.avatarUrl,
-              headline: nextUser.headline,
-              bio: nextUser.bio,
-              college: nextUser.college,
-              degree: nextUser.degree,
-              grad_year: nextUser.gradYear,
-              gpa: nextUser.gpa,
-              location: nextUser.location,
-              target_role: nextUser.targetRole,
-              github_url: nextUser.githubUrl,
-              linkedin_url: nextUser.linkedinUrl,
-              portfolio_url: nextUser.portfolioUrl,
-              is_private_account: Boolean(nextUser.isPrivateAccount),
-              updated_at: new Date().toISOString(),
-            })
-            .then(({ error }) => {
-              if (error) console.warn('Supabase profile sync note:', error.message);
-            });
-        }
-      });
-
+      // Async sync to Supabase database profiles table
+      supabaseService.syncUserProfile(nextUser).catch((e) => console.warn('Supabase profile sync error:', e));
       return nextUser;
     });
-  };
+  }, []);
 
-  const handleLoginSuccess = (name: string, email: string, additionalData?: Partial<UserProfile>) => {
+  const handleUpdateSkills = useCallback((newSkills: SkillItem[]) => {
+    setSkills(newSkills);
+    supabaseService.saveUserSkills(newSkills, user);
+  }, [user]);
+
+  const handleUpdateRoadmap = useCallback((newNodes: RoadmapNode[]) => {
+    setRoadmapNodes(newNodes);
+    supabaseService.saveUserRoadmap(newNodes, user);
+  }, [user]);
+
+  const handleLoginSuccess = async (name: string, email: string, additionalData?: Partial<UserProfile>) => {
     const cleanEmail = (email || '').trim().toLowerCase();
     let existingProfile: Partial<UserProfile> = {};
     try {
@@ -226,6 +206,45 @@ export default function App() {
     }
 
     setUser(nextUser);
+
+    // Fetch and sync with Supabase public.profiles table
+    try {
+      const { data: dbProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+
+      if (dbProfile) {
+        const merged: UserProfile = {
+          ...nextUser,
+          name: dbProfile.name || nextUser.name,
+          avatarUrl: dbProfile.avatar_url || nextUser.avatarUrl,
+          college: dbProfile.college || nextUser.college,
+          degree: dbProfile.degree || nextUser.degree,
+          gradYear: dbProfile.grad_year || nextUser.gradYear,
+          targetRole: dbProfile.target_role || nextUser.targetRole,
+          headline: dbProfile.headline || nextUser.headline,
+          bio: dbProfile.bio || nextUser.bio,
+        };
+        try {
+          localStorage.setItem('industryskill_auth_user', JSON.stringify(merged));
+          localStorage.setItem(`industryskill_profile_${cleanEmail}`, JSON.stringify(merged));
+        } catch (e) {
+          // ignore
+        }
+        setUser(merged);
+        const realSkills = await supabaseService.getUserSkills(merged);
+        if (Array.isArray(realSkills) && realSkills.length > 0) {
+          setSkills(realSkills);
+        }
+      } else {
+        // Upsert initial profile into Supabase
+        await supabaseService.syncUserProfile(nextUser);
+      }
+    } catch (err) {
+      console.warn('Notice loading Supabase profile:', err);
+    }
   };
 
   const handleSignOut = async () => {
@@ -278,7 +297,7 @@ export default function App() {
           <LandingHero onNavigate={handleNavigate} user={user} />
         )}
 
-        {/* 1. Dashboard */}
+        {/* 1. Dashboard (Instant Paint) */}
         {currentView === 'dashboard' && (
           <DashboardView
             user={user}
@@ -289,168 +308,188 @@ export default function App() {
           />
         )}
 
-        {/* 2. My Profile */}
-        {currentView === 'profile' && (
-          <div className="pt-20 md:pt-24 pb-24">
-            <ProfileView
+        {/* Suspense Container for Lazy Views */}
+        <Suspense fallback={<ViewLoadingFallback />}>
+          {/* 2. My Profile */}
+          {currentView === 'profile' && (
+            <div className="pt-20 md:pt-24 pb-24">
+              <ProfileView
+                user={user}
+                skills={skills}
+                onUpdateProfile={handleUpdateProfile}
+                onNavigate={handleNavigate}
+              />
+            </div>
+          )}
+
+          {/* 3. My Skills */}
+          {currentView === 'skills' && (
+            <div className="pt-20 md:pt-24 pb-24">
+              <SkillsView
+                user={user}
+                skills={skills}
+                onNavigate={handleNavigate}
+                onUpdateSkills={handleUpdateSkills}
+              />
+            </div>
+          )}
+
+          {/* 4. Skill Gap Analysis */}
+          {currentView === 'skill-gap' && (
+            <div className="pt-20 md:pt-24 pb-24">
+              <SkillGapView
+                user={user}
+                skills={skills}
+                onNavigate={handleNavigate}
+              />
+            </div>
+          )}
+
+          {/* 5. AI Recommendations */}
+          {currentView === 'ai-recommendations' && (
+            <div className="pt-20 md:pt-24 pb-24">
+              <AIRecommendationsView
+                user={user}
+                onNavigate={handleNavigate}
+              />
+            </div>
+          )}
+
+          {/* 6. Courses & YouTube Skill Tracks */}
+          {currentView === 'courses' && (
+            <div className="pt-20 md:pt-24 pb-24">
+              <CoursesView
+                user={user}
+                onNavigate={handleNavigate}
+                onUpdateUser={handleUpdateProfile}
+                onAskNebulaAI={(prompt) => {
+                  handleNavigate('nebula');
+                }}
+              />
+            </div>
+          )}
+
+          {/* 7. Industry Tools */}
+          {currentView === 'industry-tools' && (
+            <div className="pt-20 md:pt-24 pb-24">
+              <IndustryToolsView onNavigate={handleNavigate} />
+            </div>
+          )}
+
+          {/* 8. Certifications */}
+          {currentView === 'certifications' && (
+            <div className="pt-20 md:pt-24 pb-24">
+              <CertificationsView onNavigate={handleNavigate} />
+            </div>
+          )}
+
+          {/* 9. Internships & Jobs */}
+          {currentView === 'opportunities' && (
+            <div className="pt-20 md:pt-24 pb-24">
+              <OpportunitiesView
+                user={user}
+                onNavigate={handleNavigate}
+                onUpdateUser={handleUpdateProfile}
+                onScanOpportunityInSafetyCenter={handleScanOpportunityInSafetyCenter}
+              />
+            </div>
+          )}
+
+          {/* 9b. Professional Career Network (SkillNet / Connectivity) */}
+          {currentView === 'network' && (
+            <div className="pt-20 md:pt-24 pb-24">
+              <ConnectivitySubsection
+                user={user}
+                onNavigate={handleNavigate}
+                onUpdateUser={handleUpdateProfile}
+              />
+            </div>
+          )}
+
+          {/* 10. Webinars */}
+          {currentView === 'webinars' && (
+            <div className="pt-20 md:pt-24 pb-24">
+              <WebinarsView
+                user={user}
+                onNavigate={handleNavigate}
+                onUpdateUser={handleUpdateProfile}
+              />
+            </div>
+          )}
+
+          {/* 11. AI Chatbot (Nebula) */}
+          {currentView === 'nebula' && (
+            <NebulaAIChat user={user} onNavigate={handleNavigate} />
+          )}
+
+          {/* 12. Assignments */}
+          {currentView === 'assignments' && (
+            <div className="pt-20 md:pt-24 pb-24">
+              <AssignmentsView user={user} onNavigate={handleNavigate} />
+            </div>
+          )}
+
+          {/* 13. Fraud Detection (Safety Center) */}
+          {currentView === 'safety' && (
+            <div className="pt-20 md:pt-24 pb-24">
+              <SafetyCenterView
+                initialUrl={safetyInitialData.url}
+                initialContent={safetyInitialData.content}
+                onNavigate={handleNavigate}
+              />
+            </div>
+          )}
+
+          {/* 14. Settings */}
+          {currentView === 'settings' && (
+            <div className="pt-20 md:pt-24 pb-24">
+              <SettingsView
+                user={user}
+                darkMode={isDarkMode}
+                onToggleDarkMode={handleToggleTheme}
+                onNavigate={handleNavigate}
+              />
+            </div>
+          )}
+
+          {/* Roadmap Secondary View */}
+          {currentView === 'roadmap' && (
+            <div className="pt-20 md:pt-24 pb-24">
+              <RoadmapView
+                user={user}
+                nodes={roadmapNodes}
+                onNavigate={handleNavigate}
+                onUpdateNodes={handleUpdateRoadmap}
+              />
+            </div>
+          )}
+
+          {/* Onboarding Wizard */}
+          {currentView === 'onboarding' && (
+            <OnboardingWizard
               user={user}
-              skills={skills}
-              onUpdateProfile={handleUpdateProfile}
+              onComplete={handleUpdateProfile}
               onNavigate={handleNavigate}
             />
-          </div>
-        )}
+          )}
 
-        {/* 3. My Skills */}
-        {currentView === 'skills' && (
-          <div className="pt-20 md:pt-24 pb-24">
-            <SkillsView
-              user={user}
-              skills={skills}
-              onNavigate={handleNavigate}
-              onUpdateSkills={(newSkills) => setSkills(newSkills)}
-            />
-          </div>
-        )}
-
-        {/* 4. Skill Gap Analysis */}
-        {currentView === 'skill-gap' && (
-          <div className="pt-20 md:pt-24 pb-24">
-            <SkillGapView
-              user={user}
-              skills={skills}
-              onNavigate={handleNavigate}
-            />
-          </div>
-        )}
-
-        {/* 5. AI Recommendations */}
-        {currentView === 'ai-recommendations' && (
-          <div className="pt-20 md:pt-24 pb-24">
-            <AIRecommendationsView
-              user={user}
-              onNavigate={handleNavigate}
-            />
-          </div>
-        )}
-
-        {/* 6. Courses & YouTube Skill Tracks */}
-        {currentView === 'courses' && (
-          <div className="pt-20 md:pt-24 pb-24">
-            <CoursesView
-              user={user}
-              onNavigate={handleNavigate}
-              onUpdateUser={handleUpdateProfile}
-              onAskNebulaAI={(prompt) => {
-                handleNavigate('nebula');
-              }}
-            />
-          </div>
-        )}
-
-        {/* 7. Industry Tools */}
-        {currentView === 'industry-tools' && (
-          <div className="pt-20 md:pt-24 pb-24">
-            <IndustryToolsView onNavigate={handleNavigate} />
-          </div>
-        )}
-
-        {/* 8. Certifications */}
-        {currentView === 'certifications' && (
-          <div className="pt-20 md:pt-24 pb-24">
-            <CertificationsView onNavigate={handleNavigate} />
-          </div>
-        )}
-
-        {/* 9. Internships & Jobs */}
-        {currentView === 'opportunities' && (
-          <div className="pt-20 md:pt-24 pb-24">
-            <OpportunitiesView
-              user={user}
-              onNavigate={handleNavigate}
-              onUpdateUser={handleUpdateProfile}
-              onScanOpportunityInSafetyCenter={handleScanOpportunityInSafetyCenter}
-            />
-          </div>
-        )}
-
-        {/* 9b. Professional Career Network (SkillNet / Connectivity) */}
-        {currentView === 'network' && (
-          <div className="pt-20 md:pt-24 pb-24">
-            <ConnectivitySubsection
-              user={user}
-              onNavigate={handleNavigate}
-              onUpdateUser={handleUpdateProfile}
-            />
-          </div>
-        )}
-
-        {/* 10. Webinars */}
-        {currentView === 'webinars' && (
-          <div className="pt-20 md:pt-24 pb-24">
-            <WebinarsView
-              user={user}
-              onNavigate={handleNavigate}
-              onUpdateUser={handleUpdateProfile}
-            />
-          </div>
-        )}
-
-        {/* 11. AI Chatbot (Nebula) */}
-        {currentView === 'nebula' && (
-          <NebulaAIChat user={user} onNavigate={handleNavigate} />
-        )}
-
-        {/* 12. Assignments */}
-        {currentView === 'assignments' && (
-          <div className="pt-20 md:pt-24 pb-24">
-            <AssignmentsView user={user} onNavigate={handleNavigate} />
-          </div>
-        )}
-
-        {/* 13. Fraud Detection (Safety Center) */}
-        {currentView === 'safety' && (
-          <div className="pt-20 md:pt-24 pb-24">
-            <SafetyCenterView
-              initialUrl={safetyInitialData.url}
-              initialContent={safetyInitialData.content}
-              onNavigate={handleNavigate}
-            />
-          </div>
-        )}
-
-        {/* 14. Settings */}
-        {currentView === 'settings' && (
-          <div className="pt-20 md:pt-24 pb-24">
-            <SettingsView
-              user={user}
-              darkMode={isDarkMode}
-              onToggleDarkMode={handleToggleTheme}
-              onNavigate={handleNavigate}
-            />
-          </div>
-        )}
-
-        {/* Roadmap Secondary View */}
-        {currentView === 'roadmap' && (
-          <div className="pt-20 md:pt-24 pb-24">
-            <RoadmapView
-              user={user}
-              nodes={roadmapNodes}
-              onNavigate={handleNavigate}
-              onUpdateNodes={(newNodes) => setRoadmapNodes(newNodes)}
-            />
-          </div>
-        )}
-
-        {/* Onboarding Wizard */}
-        {currentView === 'onboarding' && (
-          <OnboardingWizard
+          {/* Smart Copilot Drawer (Best Feature) */}
+          <SmartCopilotDrawer
+            isOpen={isCopilotOpen}
+            onClose={() => setIsCopilotOpen(false)}
             user={user}
-            onComplete={handleUpdateProfile}
+            skills={skills}
             onNavigate={handleNavigate}
           />
-        )}
+
+          {/* Authentication Login Modal */}
+          <LoginModal
+            isOpen={isAuthOpen}
+            onClose={() => setIsAuthOpen(false)}
+            onNavigate={handleNavigate}
+            onLoginSuccess={handleLoginSuccess}
+          />
+        </Suspense>
       </div>
 
       {/* Floating Action Buttons */}
@@ -467,25 +506,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Smart Copilot Drawer (Best Feature) */}
-      <SmartCopilotDrawer
-        isOpen={isCopilotOpen}
-        onClose={() => setIsCopilotOpen(false)}
-        user={user}
-        skills={skills}
-        onNavigate={handleNavigate}
-      />
-
       {/* Bottom Navigation Bar for Mobile */}
       <BottomNav currentView={currentView} onNavigate={handleNavigate} />
-
-      {/* Authentication Login Modal (if opened from secondary views) */}
-      <LoginModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onNavigate={handleNavigate}
-        onLoginSuccess={handleLoginSuccess}
-      />
     </div>
   );
 }

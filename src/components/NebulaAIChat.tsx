@@ -48,6 +48,115 @@ export const SUPPORTED_LANGUAGES: LanguageOption[] = [
   { code: 'Polish', name: 'Polish', native: 'Polski', flag: '🇵🇱', speechCode: 'pl-PL' },
 ];
 
+function renderInlineFormatting(text: string) {
+  const segments = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
+  return segments.map((seg, i) => {
+    if (seg.startsWith('`') && seg.endsWith('`') && seg.length > 2) {
+      return (
+        <code key={i} className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-mono text-[11px] font-semibold border border-slate-200 dark:border-slate-700">
+          {seg.slice(1, -1)}
+        </code>
+      );
+    }
+    if (seg.startsWith('**') && seg.endsWith('**') && seg.length > 4) {
+      return (
+        <strong key={i} className="font-bold text-slate-900 dark:text-white">
+          {seg.slice(2, -2)}
+        </strong>
+      );
+    }
+    return seg;
+  });
+}
+
+const FormattedMessage: React.FC<{ content: string; isUser: boolean }> = ({ content, isUser }) => {
+  if (isUser) {
+    return <div className="whitespace-pre-wrap font-sans leading-relaxed text-xs sm:text-sm break-words">{content}</div>;
+  }
+
+  const parts = content.split(/(```[\s\S]*?```)/g);
+
+  return (
+    <div className="space-y-2 text-xs sm:text-sm font-sans leading-relaxed text-slate-800 dark:text-slate-200 break-words">
+      {parts.map((part, index) => {
+        if (part.startsWith('```') && part.endsWith('```')) {
+          const match = part.match(/```(\w*)\n?([\s\S]*?)```/);
+          const lang = match ? match[1] || 'code' : 'code';
+          const code = match ? match[2].trim() : part.slice(3, -3).trim();
+          return (
+            <div key={index} className="my-2 rounded-xl overflow-hidden border border-slate-700/60 bg-slate-950 text-slate-100 text-xs font-mono shadow-md">
+              <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900 border-b border-slate-800 text-[11px] text-slate-400 font-semibold">
+                <span className="uppercase tracking-wider text-blue-400">{lang}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(code);
+                  }}
+                  className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+                  title="Copy Code"
+                >
+                  <span className="material-symbols-outlined text-[13px]">content_copy</span>
+                  <span>Copy Code</span>
+                </button>
+              </div>
+              <pre className="p-3 overflow-x-auto text-[11px] sm:text-xs leading-relaxed scrollbar-thin scrollbar-thumb-slate-800">
+                <code>{code}</code>
+              </pre>
+            </div>
+          );
+        }
+
+        const lines = part.split('\n');
+        return (
+          <div key={index} className="space-y-1">
+            {lines.map((line, lIdx) => {
+              if (!line.trim()) return <div key={lIdx} className="h-1.5" />;
+
+              if (line.startsWith('### ')) {
+                return (
+                  <h3 key={lIdx} className="text-sm font-bold text-slate-900 dark:text-white pt-1">
+                    {line.slice(4)}
+                  </h3>
+                );
+              }
+              if (line.startsWith('## ')) {
+                return (
+                  <h2 key={lIdx} className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white pt-1.5">
+                    {line.slice(3)}
+                  </h2>
+                );
+              }
+              if (line.startsWith('# ')) {
+                return (
+                  <h1 key={lIdx} className="text-base font-black text-slate-900 dark:text-white pt-2">
+                    {line.slice(2)}
+                  </h1>
+                );
+              }
+
+              if (line.startsWith('• ') || line.startsWith('- ') || line.startsWith('* ')) {
+                const bulletText = line.replace(/^[•\-*]\s+/, '');
+                return (
+                  <div key={lIdx} className="flex items-start gap-1.5 pl-1 text-slate-800 dark:text-slate-200">
+                    <span className="text-blue-500 font-bold leading-none mt-1 text-[10px]">•</span>
+                    <span>{renderInlineFormatting(bulletText)}</span>
+                  </div>
+                );
+              }
+
+              return (
+                <p key={lIdx} className="leading-relaxed">
+                  {renderInlineFormatting(line)}
+                </p>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export const NebulaAIChat: React.FC<NebulaAIChatProps> = ({ user, onNavigate }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -249,40 +358,61 @@ How can I help you today? Type below or pick a quick starter prompt!`,
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let accumulatedText = '';
+      let sseBuffer = '';
+      let detectedModel = isThinkingMode ? 'gemini-3.1-pro-preview' : 'gemini-3.7-flash';
 
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
 
-        const rawChunk = decoder.decode(value, { stream: true });
-        const lines = rawChunk.split('\n');
+        sseBuffer += decoder.decode(value, { stream: true });
+        const lines = sseBuffer.split('\n');
+        sseBuffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data: ')) {
             try {
-              const data = JSON.parse(line.slice(6));
+              const data = JSON.parse(trimmed.slice(6));
               if (data.chunk) {
                 accumulatedText += data.chunk;
                 setStreamingText(accumulatedText);
               }
-              if (data.done) {
-                // Done streaming
+              if (data.modelUsed) {
+                detectedModel = data.modelUsed;
               }
             } catch (e) {
-              // Non-JSON SSE line
+              // Ignore partial JSON
             }
           }
         }
       }
 
-      const finalContent = accumulatedText || 'I processed your query and provided structured advice according to top industry standards.';
+      // Process any remaining bytes in buffer
+      if (sseBuffer.trim().startsWith('data: ')) {
+        try {
+          const data = JSON.parse(sseBuffer.trim().slice(6));
+          if (data.chunk) {
+            accumulatedText += data.chunk;
+          }
+          if (data.modelUsed) {
+            detectedModel = data.modelUsed;
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }
+
+      if (!accumulatedText.trim()) {
+        throw new Error('Streaming yielded empty text, falling back to standard JSON API');
+      }
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         role: 'model',
-        content: finalContent,
+        content: accumulatedText.trim(),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        modelUsed: isThinkingMode ? 'gemini-3.1-pro-preview' : 'gemini-3.7-flash',
+        modelUsed: detectedModel,
         thinkingModeActive: isThinkingMode,
         language: selectedLanguage,
         mode: activeMode,
@@ -724,9 +854,7 @@ How can I help you today? Type below or pick a quick starter prompt!`,
                 )}
 
                 {/* Primary Content formatted */}
-                <div className="whitespace-pre-wrap font-sans leading-relaxed text-xs sm:text-sm break-words">
-                  {msg.content}
-                </div>
+                <FormattedMessage content={msg.content} isUser={isUser} />
 
                 {/* Optional Translated View */}
                 {msg.translatedContent && (
@@ -737,9 +865,7 @@ How can I help you today? Type below or pick a quick starter prompt!`,
                         Translated ({selectedLanguage})
                       </span>
                     </div>
-                    <div className="whitespace-pre-wrap text-xs sm:text-sm text-slate-800 dark:text-slate-200 break-words">
-                      {msg.translatedContent}
-                    </div>
+                    <FormattedMessage content={msg.translatedContent} isUser={false} />
                   </div>
                 )}
 

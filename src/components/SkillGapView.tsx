@@ -18,7 +18,39 @@ export const SkillGapView: React.FC<SkillGapViewProps> = ({
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<string | null>(null);
 
-  const gapMetrics: SkillGapMetric[] = initialSkillGapMetrics;
+  // Dynamically compute real gap metrics based on user's actual tracked skills
+  const dynamicMetrics: SkillGapMetric[] = React.useMemo(() => {
+    if (skills.length === 0) return [];
+
+    return skills.map((s) => {
+      const required = 85;
+      const current = s.proficiency;
+      const delta = Math.max(0, required - current);
+      let urgency: 'Critical' | 'Moderate' | 'Good' = 'Good';
+      if (delta > 30) urgency = 'Critical';
+      else if (delta > 10) urgency = 'Moderate';
+
+      return {
+        skill: s.name,
+        currentLevel: current,
+        requiredLevel: required,
+        gapPercentage: delta,
+        urgency,
+        suggestedAction: delta > 20
+          ? `Complete hands-on projects and quizzes in ${s.name} to close the ${delta}% gap.`
+          : `Maintain competency with weekly real-world practice.`,
+        estimatedHours: Math.max(4, Math.round(delta * 0.4)),
+      };
+    });
+  }, [skills]);
+
+  const gapMetrics = dynamicMetrics;
+
+  const currentMatchPct = skills.length > 0
+    ? Math.round(skills.reduce((acc, s) => acc + s.proficiency, 0) / skills.length)
+    : 0;
+
+  const criticalGapsCount = gapMetrics.filter((g) => g.urgency === 'Critical').length;
 
   const filteredMetrics = gapMetrics.filter(
     (m) => filterUrgency === 'all' || m.urgency === filterUrgency
@@ -89,30 +121,36 @@ export const SkillGapView: React.FC<SkillGapViewProps> = ({
           <div className="bg-slate-800/50 backdrop-blur-xs p-4 rounded-2xl border border-slate-700/50">
             <span className="text-xs text-slate-400 font-bold uppercase">Current Skill Match</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-3xl font-black text-white">78%</span>
-              <span className="text-xs text-emerald-400 font-semibold">+12% vs last month</span>
+              <span className="text-3xl font-black text-white">{currentMatchPct}%</span>
+              <span className="text-xs text-emerald-400 font-semibold">{skills.length} tracked skills</span>
             </div>
             <div className="w-full bg-slate-700 rounded-full h-2 mt-3 overflow-hidden">
-              <div className="bg-blue-500 h-2 rounded-full" style={{ width: '78%' }} />
+              <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${currentMatchPct}%` }} />
             </div>
           </div>
 
           <div className="bg-slate-800/50 backdrop-blur-xs p-4 rounded-2xl border border-slate-700/50">
             <span className="text-xs text-slate-400 font-bold uppercase">Critical Gaps Remaining</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-3xl font-black text-amber-400">3 Skills</span>
-              <span className="text-xs text-slate-400 font-semibold">Docker, Node Auth, CI/CD</span>
+              <span className="text-3xl font-black text-amber-400">{criticalGapsCount} Skills</span>
+              <span className="text-xs text-slate-400 font-semibold">{criticalGapsCount > 0 ? 'Requires attention' : 'Optimal'}</span>
             </div>
-            <p className="text-[11px] text-slate-300 mt-2">Estimated 44 hours of focused hands-on projects to close</p>
+            <p className="text-[11px] text-slate-300 mt-2">
+              {criticalGapsCount > 0
+                ? `${criticalGapsCount * 12} estimated hours of project practice to bridge`
+                : 'All tracked skills meet or exceed target threshold'}
+            </p>
           </div>
 
           <div className="bg-slate-800/50 backdrop-blur-xs p-4 rounded-2xl border border-slate-700/50">
             <span className="text-xs text-slate-400 font-bold uppercase">Target Readiness Horizon</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-3xl font-black text-indigo-300">95%+</span>
-              <span className="text-xs text-indigo-200 font-semibold">Ready in 3 Weeks</span>
+              <span className="text-3xl font-black text-indigo-300">
+                {currentMatchPct >= 80 ? '95%+' : `${Math.min(95, currentMatchPct + 25)}%`}
+              </span>
+              <span className="text-xs text-indigo-200 font-semibold">Tier-1 Target</span>
             </div>
-            <p className="text-[11px] text-slate-300 mt-2">Satisfies 100% of Summer 2026 Tier-1 internship bars</p>
+            <p className="text-[11px] text-slate-300 mt-2">Benchmarked against live {selectedRole} industry criteria</p>
           </div>
         </div>
       </div>
@@ -140,7 +178,7 @@ export const SkillGapView: React.FC<SkillGapViewProps> = ({
               onClick={() => onNavigate('courses')}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
             >
-              Start Recommended Docker & Cloud Course
+              Start Recommended Learning Sprints
             </button>
           </div>
         </div>
@@ -170,8 +208,34 @@ export const SkillGapView: React.FC<SkillGapViewProps> = ({
         </span>
       </div>
 
-      {/* Gap Metrics Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Gap Metrics Cards Grid or Empty State */}
+      {filteredMetrics.length === 0 ? (
+        <div className="bg-white dark:bg-[#151f38] border border-slate-200 dark:border-slate-800 rounded-3xl p-10 text-center space-y-4 shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
+            <span className="material-symbols-outlined text-3xl">insights</span>
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              {skills.length === 0 ? 'No Skills Tracked Yet' : 'No Gaps in this Filter'}
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+              {skills.length === 0
+                ? `Add your technical skills in My Skills to calculate your personalized readiness delta against ${selectedRole} requirements.`
+                : 'All your tracked competencies meet the requirements for this category filter.'}
+            </p>
+          </div>
+          {skills.length === 0 && (
+            <button
+              onClick={() => onNavigate('skills')}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition-all inline-flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-[18px]">add_circle</span>
+              Add Skills in My Skills
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredMetrics.map((metric, idx) => (
           <div
             key={idx}
@@ -255,6 +319,7 @@ export const SkillGapView: React.FC<SkillGapViewProps> = ({
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 };

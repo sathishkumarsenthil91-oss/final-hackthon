@@ -23,7 +23,10 @@ html.dark {
 html {
   background-color: #f8fafc;
   color: #0f172a;
-  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+html.theme-transitioning {
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 html.dark {

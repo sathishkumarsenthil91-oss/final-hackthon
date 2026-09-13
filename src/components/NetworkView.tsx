@@ -88,24 +88,6 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
     saveFollowRequests(followRequests);
   }, [followRequests]);
 
-  // Load and refresh live users & posts from Supabase / community registry
-  useEffect(() => {
-    let isMounted = true;
-    connectivityService.fetchUsers(user).then((fetchedUsers) => {
-      if (isMounted && Array.isArray(fetchedUsers) && fetchedUsers.length > 0) {
-        setNetworkUsers(fetchedUsers);
-      }
-    });
-    connectivityService.fetchPosts(user).then((fetchedPosts) => {
-      if (isMounted && Array.isArray(fetchedPosts) && fetchedPosts.length > 0) {
-        setPosts(fetchedPosts);
-      }
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, [user]);
-
   // Real-Time Supabase Message & Broadcast Subscription Listener
   useEffect(() => {
     const unsubscribe = connectivityService.subscribeToRealtimeChat(
@@ -1108,48 +1090,33 @@ export const NetworkView: React.FC<NetworkViewProps> = ({
                 Suggested Mentors & Peers
               </h4>
               <div className="space-y-3">
-                {networkUsers.length === 0 ? (
-                  <div className="text-center py-3">
-                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No peers found yet</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 mb-2">
-                      Search registered profiles in the Discover tab.
-                    </p>
-                    <button
-                      onClick={() => setActiveTab('discover')}
-                      className="px-3 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 text-purple-700 dark:text-purple-300 font-bold text-[11px] transition-colors cursor-pointer"
+                {networkUsers.slice(0, 3).map((usr) => (
+                  <div key={usr.id} className="flex items-center justify-between gap-2">
+                    <div
+                      onClick={() => setViewingUser(usr)}
+                      className="flex items-center gap-2 truncate cursor-pointer"
                     >
-                      Explore Discover
+                      <img src={usr.avatarUrl} alt={usr.name} className="w-8 h-8 rounded-xl object-cover" />
+                      <div className="truncate">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate hover:underline">
+                          {usr.name}
+                        </p>
+                        <p className="text-[10px] text-slate-500 truncate">{usr.company}</p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleToggleFollow(usr)}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
+                        usr.isFollowing
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white'
+                      }`}
+                    >
+                      {usr.isFollowing ? 'Following' : '+ Follow'}
                     </button>
                   </div>
-                ) : (
-                  networkUsers.slice(0, 3).map((usr) => (
-                    <div key={usr.id} className="flex items-center justify-between gap-2">
-                      <div
-                        onClick={() => setViewingUser(usr)}
-                        className="flex items-center gap-2 truncate cursor-pointer"
-                      >
-                        <img src={usr.avatarUrl} alt={usr.name} className="w-8 h-8 rounded-xl object-cover" />
-                        <div className="truncate">
-                          <p className="text-xs font-bold text-slate-900 dark:text-white truncate hover:underline">
-                            {usr.name}
-                          </p>
-                          <p className="text-[10px] text-slate-500 truncate">{usr.company}</p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleToggleFollow(usr)}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
-                          usr.isFollowing
-                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                            : 'bg-purple-600 hover:bg-purple-700 text-white'
-                        }`}
-                      >
-                        {usr.isFollowing ? 'Following' : '+ Follow'}
-                      </button>
-                    </div>
-                  ))
-                )}
+                ))}
               </div>
             </div>
           </div>

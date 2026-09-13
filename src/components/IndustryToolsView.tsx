@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IndustryTool, ViewType } from '../types';
 import { initialIndustryTools } from '../data/mockData';
+import { supabaseService } from '../services/supabaseService';
 
 interface IndustryToolsViewProps {
   onNavigate: (view: ViewType) => void;
@@ -8,6 +9,14 @@ interface IndustryToolsViewProps {
 
 export const IndustryToolsView: React.FC<IndustryToolsViewProps> = ({ onNavigate }) => {
   const [tools, setTools] = useState<IndustryTool[]>(initialIndustryTools);
+
+  useEffect(() => {
+    supabaseService.fetchIndustryTools().then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setTools(data);
+      }
+    });
+  }, []);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [selectedTool, setSelectedTool] = useState<IndustryTool | null>(null);
 

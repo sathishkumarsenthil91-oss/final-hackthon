@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CertificationItem, ViewType } from '../types';
 import { initialCertifications } from '../data/mockData';
+import { supabaseService } from '../services/supabaseService';
 
 interface CertificationsViewProps {
   onNavigate: (view: ViewType) => void;
@@ -8,6 +9,14 @@ interface CertificationsViewProps {
 
 export const CertificationsView: React.FC<CertificationsViewProps> = ({ onNavigate }) => {
   const [certifications, setCertifications] = useState<CertificationItem[]>(initialCertifications);
+
+  useEffect(() => {
+    supabaseService.fetchCertifications().then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setCertifications(data);
+      }
+    });
+  }, []);
   const [activeIssuer, setActiveIssuer] = useState<string>('All');
   const [copiedVoucher, setCopiedVoucher] = useState<string | null>(null);
 

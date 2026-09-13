@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppSettings, UserProfile, ViewType } from '../types';
 import { initialAppSettings } from '../data/mockData';
+import { SupabaseDiagnosticsModal } from './SupabaseDiagnosticsModal';
 
 interface SettingsViewProps {
   user: UserProfile;
@@ -17,6 +18,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 }) => {
   const [settings, setSettings] = useState<AppSettings>(initialAppSettings);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
 
   const handleToggle = (key: keyof AppSettings) => {
     setSettings((prev) => {
@@ -69,6 +71,38 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* Settings Sections */}
       <div className="space-y-6">
+        {/* Section 0: Supabase Cloud Database & RLS Diagnostic */}
+        <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-blue-500/10 dark:from-emerald-950/40 dark:via-teal-950/40 dark:to-blue-950/40 border border-emerald-300/80 dark:border-emerald-800/80 rounded-3xl p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <span className="material-symbols-outlined text-2xl">database</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                    Supabase Database Connection & RLS Audit
+                  </h2>
+                  <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-200 font-bold px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-700">
+                    Live Project Connected
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
+                  Test and verify that your app can read and write data across all tables: <code className="font-mono text-emerald-700 dark:text-emerald-400 font-semibold">profiles</code>, <code className="font-mono text-emerald-700 dark:text-emerald-400 font-semibold">posts</code>, <code className="font-mono text-emerald-700 dark:text-emerald-400 font-semibold">messages</code>, <code className="font-mono text-emerald-700 dark:text-emerald-400 font-semibold">user_skills</code>, and <code className="font-mono text-emerald-700 dark:text-emerald-400 font-semibold">certificates</code>.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowDiagnostics(true)}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[18px]">verified</span>
+              Test Database Connection
+            </button>
+          </div>
+        </div>
+
         {/* Section 1: Appearance & Display */}
         <div className="bg-white dark:bg-[#151f38] border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-4">
           <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -220,6 +254,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </div>
       </div>
+
+      <SupabaseDiagnosticsModal
+        isOpen={showDiagnostics}
+        onClose={() => setShowDiagnostics(false)}
+      />
     </div>
   );
 };

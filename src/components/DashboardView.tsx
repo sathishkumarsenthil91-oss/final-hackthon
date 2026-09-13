@@ -41,7 +41,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     { id: 'courses', label: 'Courses', icon: 'school', color: 'from-cyan-600 to-blue-600' },
     { id: 'industry-tools', label: 'Industry Tools', icon: 'build', color: 'from-teal-600 to-emerald-600' },
     { id: 'certifications', label: 'Certifications', icon: 'military_tech', color: 'from-amber-500 to-orange-600' },
-    { id: 'opportunities', label: 'Internships', icon: 'work', badge: '19 New', color: 'from-blue-600 to-teal-600' },
+    { id: 'opportunities', label: 'Internships', icon: 'work', badge: 'Active', color: 'from-blue-600 to-teal-600' },
     { id: 'webinars', label: 'Webinars', icon: 'event', badge: 'Live', color: 'from-purple-600 to-indigo-700' },
     { id: 'assignments', label: 'Assignments', icon: 'task', color: 'from-indigo-600 to-blue-700' },
     { id: 'safety', label: 'Fraud Detection', icon: 'security', badge: 'Shield', color: 'from-rose-600 to-red-700' },
@@ -119,8 +119,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             className="bg-white/10 backdrop-blur-xs p-3.5 rounded-2xl cursor-pointer hover:bg-white/15 transition-all"
           >
             <span className="text-[11px] font-bold text-blue-100 uppercase">Certifications</span>
-            <p className="text-2xl font-black mt-0.5">{user.certificationsCount || 3}</p>
-            <p className="text-[10px] text-amber-200 font-semibold mt-0.5">Google Cloud Ready</p>
+            <p className="text-2xl font-black mt-0.5">{user.certificationsCount ?? 0}</p>
+            <p className="text-[10px] text-amber-200 font-semibold mt-0.5">Verified Credentials</p>
           </div>
         </div>
       </div>

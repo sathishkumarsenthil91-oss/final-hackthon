@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AssignmentItem, ViewType, UserProfile } from '../types';
 import { initialAssignments } from '../data/mockData';
+import { supabaseService } from '../services/supabaseService';
 
 interface AssignmentsViewProps {
   user?: UserProfile;
@@ -37,6 +38,14 @@ export const AssignmentsView: React.FC<AssignmentsViewProps> = ({ user, onNaviga
       console.error('Failed to persist assignments', e);
     }
   }, [assignments, storageKey]);
+
+  useEffect(() => {
+    supabaseService.fetchAssignments().then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setAssignments((prev) => (prev.length > 0 ? prev : data));
+      }
+    });
+  }, []);
 
   const filteredAssignments = assignments.filter((a) => {
     if (filterStatus === 'All') return true;

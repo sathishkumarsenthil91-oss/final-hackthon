@@ -406,7 +406,7 @@ CREATE TABLE IF NOT EXISTS public.conversations (
 
 CREATE TABLE IF NOT EXISTS public.messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  conversation_id UUID REFERENCES public.conversations(id) ON DELETE CASCADE,
+  conversation_id UUID REFERENCES public.conversations(id) ON DELETE CASCADE NOT NULL,
   sender_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   receiver_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   content TEXT NOT NULL,
@@ -607,9 +607,7 @@ CREATE POLICY "Public catalog view tools" ON public.industry_tools FOR SELECT US
 
 -- 16.2 User Profiles & Settings
 CREATE POLICY "Profiles are viewable by all users" ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Users can delete own profile" ON public.profiles FOR DELETE USING (auth.uid() = id);
 
 CREATE POLICY "Users manage own settings" ON public.user_settings FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users manage own skills" ON public.user_skills FOR ALL USING (auth.uid() = user_id);

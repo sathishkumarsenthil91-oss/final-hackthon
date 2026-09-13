@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ViewType, UserProfile, OpportunityItem } from '../types';
 import { initialOpportunities } from '../data/mockData';
+import { supabaseService } from '../services/supabaseService';
 import { GoogleLogo } from './GoogleLogo';
 import { ConnectivitySubsection } from './ConnectivitySubsection';
 
@@ -19,6 +20,14 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
 }) => {
   const [activeSubsection, setActiveSubsection] = useState<'matched' | 'connectivity'>('matched');
   const [opportunities, setOpportunities] = useState<OpportunityItem[]>(initialOpportunities);
+
+  useEffect(() => {
+    supabaseService.fetchOpportunities().then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setOpportunities(data);
+      }
+    });
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'All' | 'Remote' | 'Hybrid' | 'Onsite'>('All');
   const [selectedOpp, setSelectedOpp] = useState<OpportunityItem | null>(null);

@@ -383,17 +383,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
       {/* Top Professional Header Bar */}
       <header className="sticky top-16 md:top-20 z-30 bg-white/90 dark:bg-[#131b2e]/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 px-3 sm:px-6 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          {/* Direct Back to Main App Button */}
-          <button
-            onClick={() => onNavigate('dashboard')}
-            className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-purple-950/50 text-slate-700 dark:text-slate-300 hover:text-purple-600 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shrink-0 border border-slate-200 dark:border-slate-700"
-            title="Exit Connectivity to Dashboard"
-          >
-            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span className="hidden sm:inline">Main App</span>
-          </button>
-
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md shadow-purple-500/20 shrink-0">
             <span className="material-symbols-outlined text-[18px] sm:text-[20px]">hub</span>
           </div>
@@ -492,50 +482,6 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 items-start">
             {/* Main Feed Column (Cols 1-2 on desktop, full width on mobile) */}
             <div className="lg:col-span-2 space-y-4 sm:space-y-6 min-w-0">
-
-          {/* Active Learning Stories Bar */}
-          {users.some((u) => u.currentlyStudyingStory) && (
-            <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
-              <div className="flex items-center justify-between mb-2.5 px-1">
-                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Active Study Sessions
-                </span>
-                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold">
-                  {users.filter((u) => u.currentlyStudyingStory).length} peers online
-                </span>
-              </div>
-              <div className="flex items-center gap-3 overflow-x-auto pb-1 no-scrollbar">
-                {users
-                  .filter((u) => u.currentlyStudyingStory)
-                  .map((peer) => (
-                    <button
-                      key={peer.id}
-                      onClick={() => {
-                        setViewingUser(peer);
-                        setActiveTab('profile');
-                      }}
-                      className="flex flex-col items-center gap-1 shrink-0 group text-left cursor-pointer"
-                    >
-                      <div className="relative p-0.5 rounded-full bg-gradient-to-tr from-purple-600 via-indigo-500 to-pink-500">
-                        <img
-                          src={peer.avatarUrl}
-                          alt={peer.name}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-[#131b2e] group-hover:scale-105 transition-transform"
-                        />
-                        {peer.onlineStatus === 'online' && (
-                          <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#131b2e]" />
-                        )}
-                      </div>
-                      <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 group-hover:text-purple-600 max-w-[68px] truncate text-center">
-                        {peer.name.split(' ')[0]}
-                      </span>
-                    </button>
-                  ))}
-              </div>
-            </div>
-          )}
-
           {/* Quick Post Prompt Bar */}
           <div
             onClick={() => setShowCreatePostModal(true)}
@@ -594,37 +540,15 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
           {/* Posts Feed */}
           <div className="space-y-4 sm:space-y-6">
-            {filteredPosts.length === 0 ? (
-              <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-8 sm:p-12 border border-slate-200/80 dark:border-slate-800/80 shadow-xs text-center">
-                <div className="w-16 h-16 rounded-2xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto mb-4 border border-purple-100 dark:border-purple-800">
-                  <span className="material-symbols-outlined text-3xl">dynamic_feed</span>
-                </div>
-                <h3 className="text-base font-bold text-slate-800 dark:text-white mb-1">
-                  {feedFilter !== 'all' ? 'No posts matching this filter' : 'No community posts yet'}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-5 leading-relaxed">
-                  {feedFilter !== 'all'
-                    ? 'Try switching to All Posts or create a new post to get the discussion started.'
-                    : 'Be the first to share a verified certificate, project update, or technical insight with your network!'}
-                </p>
-                <button
-                  onClick={() => setShowCreatePostModal(true)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-500/20 transition-all cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-base">add</span>
-                  Create First Post
-                </button>
-              </div>
-            ) : (
-              filteredPosts.map((post) => {
-                const isCurrentUserPost = post.author.isCurrentUser || post.author.id === currentUserMapped.id;
-                const authorUser = users.find((u) => u.id === post.author.id);
+            {filteredPosts.map((post) => {
+              const isCurrentUserPost = post.author.isCurrentUser || post.author.id === currentUserMapped.id;
+              const authorUser = users.find((u) => u.id === post.author.id);
 
-                return (
-                  <article
-                    key={post.id}
-                    className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs overflow-hidden min-w-0"
-                  >
+              return (
+                <article
+                  key={post.id}
+                  className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs overflow-hidden min-w-0"
+                >
                   {/* Post Header */}
                   <div className="p-3.5 sm:p-5 flex items-center justify-between gap-2">
                     <div
@@ -902,7 +826,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   </div>
                 </article>
               );
-            }))}
+            })}
           </div>
         </div>
 
@@ -971,58 +895,42 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
             </div>
 
             <div className="space-y-3">
-              {users.length === 0 ? (
-                <div className="text-center py-4 px-2">
-                  <span className="material-symbols-outlined text-slate-400 text-2xl mb-1">group</span>
-                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No peers found yet</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 mb-2.5">
-                    Connect with other developers as new profiles join.
-                  </p>
-                  <button
-                    onClick={() => setActiveTab('directory')}
-                    className="px-3 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 text-purple-700 dark:text-purple-300 font-bold text-[11px] transition-colors cursor-pointer"
+              {users.slice(0, 4).map((peer) => (
+                <div key={peer.id} className="flex items-center justify-between gap-2">
+                  <div
+                    onClick={() => {
+                      setViewingUser(peer);
+                      setActiveTab('profile');
+                    }}
+                    className="flex items-center gap-2.5 min-w-0 cursor-pointer group"
                   >
-                    Open Directory
+                    <img
+                      src={peer.avatarUrl}
+                      alt={peer.name}
+                      className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-purple-600 transition-colors truncate">
+                        {peer.name}
+                      </p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                        {peer.company}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleFollowToggle(peer)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer shrink-0 ${
+                      peer.isFollowing
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                        : 'bg-purple-600 text-white hover:bg-purple-500'
+                    }`}
+                  >
+                    {peer.isFollowing ? '✓' : '+ Follow'}
                   </button>
                 </div>
-              ) : (
-                users.slice(0, 4).map((peer) => (
-                  <div key={peer.id} className="flex items-center justify-between gap-2">
-                    <div
-                      onClick={() => {
-                        setViewingUser(peer);
-                        setActiveTab('profile');
-                      }}
-                      className="flex items-center gap-2.5 min-w-0 cursor-pointer group"
-                    >
-                      <img
-                        src={peer.avatarUrl}
-                        alt={peer.name}
-                        className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-purple-600 transition-colors truncate">
-                          {peer.name}
-                        </p>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                          {peer.company}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleFollowToggle(peer)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer shrink-0 ${
-                        peer.isFollowing
-                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                          : 'bg-purple-600 text-white hover:bg-purple-500'
-                      }`}
-                    >
-                      {peer.isFollowing ? '✓' : '+ Follow'}
-                    </button>
-                  </div>
-                ))
-              )}
+              ))}
             </div>
           </div>
 
@@ -1048,19 +956,19 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
   )}
 
       {/* ========================================================================= */}
-      {/* 2. CHAT TAB: Real User 1-on-1 Direct Messaging */}
+      {/* 2. CHAT TAB: Real User 1-on-1 Direct Messaging (Full Responsive Viewport) */}
       {/* ========================================================================= */}
       {activeTab === 'chat' && (
-        <div className="max-w-4xl mx-auto w-full px-3 sm:px-6 pt-3 sm:pt-5">
-          <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[480px] sm:min-h-[560px]">
+        <div className="w-full h-[calc(100vh-130px)] sm:h-[calc(100vh-145px)] px-2 sm:px-4 md:px-6 py-2 flex flex-col">
+          <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden flex-1 grid grid-cols-1 md:grid-cols-12 min-h-0">
             {/* Conversations Sidebar (Col 1-5) */}
             <div
-              className={`md:col-span-5 border-r border-slate-200 dark:border-slate-800 flex flex-col ${
+              className={`md:col-span-5 lg:col-span-4 border-r border-slate-200 dark:border-slate-800 flex flex-col h-full min-h-0 ${
                 activeChatUser ? 'hidden md:flex' : 'flex'
               }`}
             >
               {/* Search Header */}
-              <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 space-y-2.5 sm:space-y-3">
+              <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 space-y-2.5 sm:space-y-3 shrink-0">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-[18px] text-purple-600">forum</span>
@@ -1086,7 +994,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
               </div>
 
               {/* Conversations List */}
-              <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 max-h-[60vh] md:max-h-none">
+              <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 min-h-0">
                 {users
                   .filter((u) => u.name.toLowerCase().includes(chatSearch.toLowerCase()) || u.company.toLowerCase().includes(chatSearch.toLowerCase()))
                   .map((peerUser) => {
@@ -1135,14 +1043,14 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
             {/* Active Chat Conversation Area (Col 6-12) */}
             <div
-              className={`md:col-span-7 flex flex-col h-full bg-slate-50/50 dark:bg-[#0f172a]/50 ${
+              className={`md:col-span-7 lg:col-span-8 flex flex-col h-full min-h-0 bg-slate-50/50 dark:bg-[#0f172a]/50 ${
                 !activeChatUser ? 'hidden md:flex items-center justify-center' : 'flex'
               }`}
             >
               {activeChatUser && activeConversation ? (
                 <>
                   {/* Chat Header */}
-                  <div className="p-3 sm:p-4 bg-white dark:bg-[#131b2e] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+                  <div className="p-3 sm:p-4 bg-white dark:bg-[#131b2e] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 shrink-0">
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                       <button
                         onClick={() => setActiveChatUser(null)}
@@ -1190,7 +1098,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   </div>
 
                   {/* Messages Bubble Area */}
-                  <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 min-h-[320px] sm:min-h-[380px] max-h-[460px]">
+                  <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 min-h-0">
                     {activeConversation.messages.length === 0 ? (
                       <div className="text-center py-10 sm:py-12 text-slate-400">
                         <span className="material-symbols-outlined text-4xl text-purple-400 mb-2">
@@ -1231,7 +1139,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
                   {/* Message Input Box */}
                   <form
                     onSubmit={handleSendMessage}
-                    className="p-2.5 sm:p-3 bg-white dark:bg-[#131b2e] border-t border-slate-200 dark:border-slate-800 flex items-center gap-2"
+                    className="p-2.5 sm:p-3 bg-white dark:bg-[#131b2e] border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 shrink-0"
                   >
                     <input
                       type="text"
@@ -1271,21 +1179,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
       {/* 3. PROFILE TAB: Professional Info, Skills, Certificates, Library */}
       {/* ========================================================================= */}
       {activeTab === 'profile' && (
-        <div className="max-w-3xl mx-auto w-full px-3 sm:px-6 pt-3 sm:pt-5 space-y-4 sm:space-y-6 pb-28">
-          {/* Back button when viewing another member's profile */}
-          {!isViewingSelf && (
-            <button
-              onClick={() => {
-                setViewingUser(null);
-                setActiveTab('home');
-              }}
-              className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#131b2e] border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs w-fit"
-            >
-              <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-              <span>Back to Feed</span>
-            </button>
-          )}
-
+        <div className="max-w-3xl mx-auto w-full px-3 sm:px-6 pt-3 sm:pt-5 space-y-4 sm:space-y-6">
           {/* Top Banner & Profile Header */}
           <div className="bg-white dark:bg-[#131b2e] rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-xs overflow-hidden">
             {/* Cover Image */}
@@ -1781,7 +1675,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
       {/* ========================================================================= */}
       {/* BOTTOM NAVIGATION ONLY: Home | Chat | Profile */}
       {/* ========================================================================= */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 py-2.5 px-6 shadow-2xl pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 py-2.5 px-6 shadow-2xl">
         <div className="max-w-md mx-auto flex items-center justify-around">
           {/* Home Tab */}
           <button
@@ -1860,12 +1754,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
       {/* 1. Create Post Modal */}
       {showCreatePostModal && (
-        <div
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowCreatePostModal(false);
-          }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in"
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in">
           <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-4 sm:p-6 max-w-lg w-full max-h-[92vh] overflow-y-auto border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 animate-scale-up">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2067,12 +1956,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
       {/* 2. Access Requests Modal / Notification Drawer */}
       {showAccessRequestsModal && (
-        <div
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowAccessRequestsModal(false);
-          }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in"
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in">
           <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2145,12 +2029,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
       {/* 3. Edit Profile Modal */}
       {showEditProfileModal && (
-        <div
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowEditProfileModal(false);
-          }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in"
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in">
           <div className="bg-white dark:bg-[#131b2e] rounded-2xl p-4 sm:p-6 max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
@@ -2231,12 +2110,7 @@ export const ConnectivitySubsection: React.FC<ConnectivitySubsectionProps> = ({
 
       {/* 4. Active Story Viewer Modal */}
       {activeStoryUser && (
-        <div
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setActiveStoryUser(null);
-          }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 animate-fade-in"
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 animate-fade-in">
           <div className="bg-[#131b2e] rounded-3xl p-5 sm:p-6 max-w-sm w-full border border-purple-500/40 text-white shadow-2xl space-y-4 relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setActiveStoryUser(null)}
